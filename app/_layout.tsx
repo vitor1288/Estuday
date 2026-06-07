@@ -4,17 +4,28 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { EstudayProvider } from '@/contexts/StudayContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
-export default function RootLayout() {
-  useFrameworkReady();
-
+function AppContent() {
+  const { activeTheme } = useTheme();
   return (
-    <EstudayProvider>
+    <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
-    </EstudayProvider>
+      <StatusBar style={activeTheme === 'dark' ? 'light' : 'dark'} />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  useFrameworkReady();
+  return (
+    <ThemeProvider>
+      <EstudayProvider>
+        <AppContent />
+      </EstudayProvider>
+    </ThemeProvider>
   );
 }
