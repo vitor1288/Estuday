@@ -3,8 +3,13 @@ import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from '@/components/Calendar/Calendar';
 import { DayModal } from '@/components/DayModal/DayModal';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors, darkColors } from '@/components/theme/colors';
 
 export default function CalendarScreen() {
+  const { activeTheme } = useTheme();
+  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -19,8 +24,8 @@ export default function CalendarScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.secondary }}>
+      <View style={{ flex: 1 }}>
         <Calendar onDayPress={handleDayPress} />
       </View>
 
@@ -34,13 +39,3 @@ export default function CalendarScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    flex: 1,
-  },
-});
