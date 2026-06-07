@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Calendar as CalendarIcon } from 'lucide-react-native';
 import { useEstuday, Compromisso } from '@/contexts/StudayContext';
@@ -7,25 +7,22 @@ import { CompromissoCard } from '@/components/CompromissoCard/CompromissoCard';
 import { CompromissoModal } from '@/components/CompromissoModal/CompromissoModal';
 import { formatDate } from '@/utils/dateUtils';
 import { useTheme } from '@/contexts/ThemeContext';
-import { lightColors, darkColors } from '@/components/theme/colors';
+import { lightColors } from '@/components/theme/colors';
+import { BaseButton } from '@/components/BaseButton/BaseButton';
 
 type FilterType = 'todos' | 'pendentes' | 'realizar' | 'concluidos' | 'hoje';
 
 export default function CompromissosScreen() {
   const { state, updateCompromisso, deleteCompromisso } = useEstuday();
-  const { activeTheme } = useTheme();
-  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+  const { colors, typography } = useTheme();
   const styles = makeStyles(colors);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCompromisso, setEditingCompromisso] = useState<Compromisso | null>(null);
   const [filter, setFilter] = useState<FilterType>('realizar');
 
-  const isOverdue = (compromisso: Compromisso): boolean => {
-    const now = new Date();
-    const compromissoDateTime = new Date(`${compromisso.data}T${compromisso.hora}`);
-    return compromissoDateTime < now;
-  };
+  const isOverdue = (compromisso: Compromisso): boolean =>
+    new Date(`${compromisso.data}T${compromisso.hora}`) < new Date();
 
   const filteredCompromissos = useMemo(() => {
     let filtered = state.compromissos;
@@ -46,9 +43,8 @@ export default function CompromissosScreen() {
       { text: 'Excluir', style: 'destructive', onPress: () => deleteCompromisso(compromisso.id) },
     ]);
   };
-  const handleToggleComplete = (compromisso: Compromisso) => {
+  const handleToggleComplete = (compromisso: Compromisso) =>
     updateCompromisso({ ...compromisso, concluido: !compromisso.concluido });
-  };
 
   const filterButtons: { key: FilterType; label: string }[] = [
     { key: 'pendentes', label: 'Pendentes' },
@@ -64,26 +60,30 @@ export default function CompromissosScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <CalendarIcon size={24} color={colors.primary} />
-          <Text style={styles.headerTitle}>Compromissos</Text>
+          <Text style={[typography.screenTitle, { color: colors.text.primary }]}>Compromissos</Text>
         </View>
-        <TouchableOpacity onPress={handleAddCompromisso} style={styles.addButton}>
-          <Plus size={20} color={colors.text.white} />
-        </TouchableOpacity>
+        <BaseButton
+          variant="primary"
+          size="sm"
+          icon={<Plus size={16} color={colors.text.white} />}
+          onPress={handleAddCompromisso}
+        >
+          Novo
+        </BaseButton>
       </View>
 
       {/* Filtros */}
       <View style={styles.filterContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
           {filterButtons.map((item) => (
-            <TouchableOpacity
+            <BaseButton
               key={item.key}
+              variant={filter === item.key ? 'primary' : 'secondary'}
+              size="sm"
               onPress={() => setFilter(item.key)}
-              style={[styles.filterButton, filter === item.key && styles.filterButtonActive]}
             >
-              <Text style={[styles.filterButtonText, filter === item.key && styles.filterButtonTextActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
+              {item.label}
+            </BaseButton>
           ))}
         </ScrollView>
       </View>
@@ -104,16 +104,16 @@ export default function CompromissosScreen() {
         ) : (
           <View style={styles.emptyState}>
             <CalendarIcon size={64} color={colors.border.medium} />
-            <Text style={styles.emptyText}>
+            <Text style={[typography.body, { color: colors.text.secondary, textAlign: 'center' }]}>
               {filter === 'pendentes' && 'Nenhum compromisso pendente'}
               {filter === 'realizar' && 'Nenhum compromisso para realizar'}
               {filter === 'hoje' && 'Nenhum compromisso para hoje'}
               {filter === 'concluidos' && 'Nenhum compromisso concluído'}
               {filter === 'todos' && 'Nenhum compromisso cadastrado'}
             </Text>
-            <TouchableOpacity onPress={handleAddCompromisso} style={styles.emptyButton}>
-              <Text style={styles.emptyButtonText}>Adicionar compromisso</Text>
-            </TouchableOpacity>
+            <BaseButton variant="primary" onPress={handleAddCompromisso}>
+              Adicionar compromisso
+            </BaseButton>
           </View>
         )}
       </ScrollView>
@@ -133,18 +133,9 @@ function makeStyles(colors: typeof lightColors) {
     container: { flex: 1, backgroundColor: colors.background.secondary },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.background.primary, borderBottomWidth: 1, borderBottomColor: colors.border.light },
     headerContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: colors.text.primary },
-    addButton: { backgroundColor: colors.primary, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     filterContainer: { backgroundColor: colors.background.primary, borderBottomWidth: 1, borderBottomColor: colors.border.light },
     filterContent: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
-    filterButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.background.tertiary, marginRight: 8 },
-    filterButtonActive: { backgroundColor: colors.primary },
-    filterButtonText: { fontSize: 14, fontWeight: '600', color: colors.text.secondary },
-    filterButtonTextActive: { color: colors.text.white },
     content: { flex: 1, padding: 20 },
     emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60, gap: 16 },
-    emptyText: { fontSize: 18, color: colors.text.secondary, textAlign: 'center', maxWidth: 250 },
-    emptyButton: { backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, marginTop: 8 },
-    emptyButtonText: { color: colors.text.white, fontWeight: '600', fontSize: 16 },
   });
 }

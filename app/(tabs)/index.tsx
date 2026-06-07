@@ -1,17 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BookOpen, Calendar, Clock, CircleCheck as CheckCircle, TrendingUp, User } from 'lucide-react-native';
+import { BookOpen, Calendar, Clock, CircleCheck as CheckCircle, TrendingUp, User, Plus } from 'lucide-react-native';
 import { useEstuday, getGreeting } from '@/contexts/StudayContext';
-import { formatDate, isFutureDate, isToday } from '@/utils/dateUtils';
+import { isFutureDate, isToday } from '@/utils/dateUtils';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { lightColors, darkColors } from '@/components/theme/colors';
+import { lightColors } from '@/components/theme/colors';
+import { BaseButton } from '@/components/BaseButton/BaseButton';
 
 export default function HomeScreen() {
   const { state } = useEstuday();
-  const { activeTheme } = useTheme();
-  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+  const { colors, typography } = useTheme();
   const styles = makeStyles(colors);
 
   const compromissosHoje = state.compromissos.filter(c => isToday(c.data));
@@ -39,10 +39,12 @@ export default function HomeScreen() {
               )}
             </TouchableOpacity>
             <View style={styles.greetingContainer}>
-              <Text style={styles.greeting}>
+              <Text style={[typography.screenTitle, { color: colors.text.primary }]}>
                 {getGreeting(state.userProfile.nome, state.userProfile.isCustomized)}
               </Text>
-              <Text style={styles.subtitle}>Como vão os estudos hoje?</Text>
+              <Text style={[typography.caption, { color: colors.text.secondary }]}>
+                Como vão os estudos hoje?
+              </Text>
             </View>
           </View>
           <TouchableOpacity style={styles.logoContainer} onPress={() => router.push('/profile')}>
@@ -52,34 +54,28 @@ export default function HomeScreen() {
 
         {/* Cards de estatísticas */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: activeTheme === 'dark' ? '#1e3a5f' : '#EFF6FF' }]}>
-            <Calendar size={24} color={colors.primary} />
-            <Text style={styles.statNumber}>{compromissosHoje.length}</Text>
-            <Text style={styles.statLabel}>Hoje</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: activeTheme === 'dark' ? '#052e16' : '#F0FDF4' }]}>
-            <CheckCircle size={24} color={colors.success} />
-            <Text style={styles.statNumber}>{compromissosConcluidos.length}</Text>
-            <Text style={styles.statLabel}>Concluídos</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: activeTheme === 'dark' ? '#1c1008' : '#FEF3C7' }]}>
-            <Clock size={24} color={colors.warning} />
-            <Text style={styles.statNumber}>{compromissosFuturos.length}</Text>
-            <Text style={styles.statLabel}>Pendentes</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: activeTheme === 'dark' ? '#1a0e2e' : '#F3E8FF' }]}>
-            <TrendingUp size={24} color="#8B5CF6" />
-            <Text style={styles.statNumber}>{totalAnotacoes}</Text>
-            <Text style={styles.statLabel}>Anotações</Text>
-          </View>
+          {[
+            { bg: colors.background.tertiary, icon: <Calendar size={24} color={colors.primary} />, value: compromissosHoje.length, label: 'Hoje' },
+            { bg: colors.background.success, icon: <CheckCircle size={24} color={colors.success} />, value: compromissosConcluidos.length, label: 'Concluídos' },
+            { bg: colors.background.warning, icon: <Clock size={24} color={colors.warning} />, value: compromissosFuturos.length, label: 'Pendentes' },
+            { bg: colors.background.tertiary, icon: <TrendingUp size={24} color="#8B5CF6" />, value: totalAnotacoes, label: 'Anotações' },
+          ].map((item, i) => (
+            <View key={i} style={[styles.statCard, { backgroundColor: item.bg }]}>
+              {item.icon}
+              <Text style={[typography.screenTitle, { color: colors.text.primary }]}>{item.value}</Text>
+              <Text style={[typography.caption, { color: colors.text.secondary }]}>{item.label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Próximos compromissos */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Próximos Compromissos</Text>
+            <Text style={[typography.sectionTitle, { color: colors.text.primary }]}>
+              Próximos Compromissos
+            </Text>
             <TouchableOpacity onPress={() => router.push('/compromissos')} style={styles.seeAllButton}>
-              <Text style={styles.seeAllText}>Ver todos</Text>
+              <Text style={[typography.caption, { color: colors.primary }]}>Ver todos</Text>
             </TouchableOpacity>
           </View>
 
@@ -91,8 +87,10 @@ export default function HomeScreen() {
                 onPress={() => router.push('/compromissos')}
               >
                 <View style={styles.compromissoContent}>
-                  <Text style={styles.compromissoTitulo}>{compromisso.titulo}</Text>
-                  <Text style={styles.compromissoData}>
+                  <Text style={[typography.cardTitle, { color: colors.text.primary }]}>
+                    {compromisso.titulo}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.text.secondary }]}>
                     {new Date(compromisso.data + 'T00:00:00').toLocaleDateString('pt-BR')} às {compromisso.hora}
                   </Text>
                 </View>
@@ -102,25 +100,29 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Calendar size={48} color={colors.border.medium} />
-              <Text style={styles.emptyText}>Nenhum compromisso pendente</Text>
-              <TouchableOpacity style={styles.addButton} onPress={() => router.push('/compromissos')}>
-                <Text style={styles.addButtonText}>Adicionar compromisso</Text>
-              </TouchableOpacity>
+              <Text style={[typography.body, { color: colors.text.secondary, textAlign: 'center' }]}>
+                Nenhum compromisso pendente
+              </Text>
+              <BaseButton variant="primary" onPress={() => router.push('/compromissos')}>
+                Adicionar compromisso
+              </BaseButton>
             </View>
           )}
         </View>
 
         {/* Ações rápidas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ações Rápidas</Text>
+          <Text style={[typography.sectionTitle, { color: colors.text.primary, marginBottom: 16 }]}>
+            Ações Rápidas
+          </Text>
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/calendar')}>
               <Calendar size={24} color={colors.primary} />
-              <Text style={styles.quickActionText}>Calendário</Text>
+              <Text style={[typography.caption, { color: colors.text.secondary }]}>Calendário</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/compromissos')}>
               <Clock size={24} color={colors.success} />
-              <Text style={styles.quickActionText}>Compromissos</Text>
+              <Text style={[typography.caption, { color: colors.text.secondary }]}>Compromissos</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -148,29 +150,17 @@ function makeStyles(colors: typeof lightColors) {
     profileImage: { width: '100%', height: '100%', borderRadius: 25 },
     profileImagePlaceholder: { width: '100%', height: '100%', backgroundColor: colors.background.tertiary, alignItems: 'center', justifyContent: 'center', borderRadius: 25 },
     greetingContainer: { flex: 1 },
-    greeting: { fontSize: 20, fontWeight: 'bold', color: colors.text.primary },
-    subtitle: { fontSize: 14, color: colors.text.secondary, marginTop: 2 },
     logoContainer: { backgroundColor: colors.background.tertiary, padding: 12, borderRadius: 12 },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12, marginBottom: 24 },
     statCard: { flex: 1, minWidth: '45%', padding: 16, borderRadius: 12, alignItems: 'center', gap: 8 },
-    statNumber: { fontSize: 24, fontWeight: 'bold', color: colors.text.primary },
-    statLabel: { fontSize: 14, color: colors.text.secondary, fontWeight: '500' },
     section: { paddingHorizontal: 20, marginBottom: 24 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-    sectionTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text.primary },
     seeAllButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.background.tertiary },
-    seeAllText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
     compromissoItem: { flexDirection: 'row', backgroundColor: colors.background.primary, padding: 16, borderRadius: 12, marginBottom: 8, alignItems: 'center' },
     compromissoContent: { flex: 1 },
-    compromissoTitulo: { fontSize: 16, fontWeight: '600', color: colors.text.primary, marginBottom: 4 },
-    compromissoData: { fontSize: 14, color: colors.text.secondary },
     categoriaIndicator: { width: 4, height: 40, borderRadius: 2, marginLeft: 12 },
     emptyState: { alignItems: 'center', paddingVertical: 32, gap: 12 },
-    emptyText: { fontSize: 16, color: colors.text.secondary, textAlign: 'center' },
-    addButton: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 8 },
-    addButtonText: { color: colors.text.white, fontWeight: '600' },
     quickActions: { flexDirection: 'row', gap: 12 },
     quickAction: { flex: 1, backgroundColor: colors.background.primary, padding: 20, borderRadius: 12, alignItems: 'center', gap: 8 },
-    quickActionText: { fontSize: 14, color: colors.text.secondary, fontWeight: '500' },
   });
 }

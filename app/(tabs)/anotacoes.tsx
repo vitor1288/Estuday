@@ -1,25 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FileText, X } from 'lucide-react-native';
+import { FileText } from 'lucide-react-native';
 import { useEstuday, AnotacaoCalendario } from '@/contexts/StudayContext';
 import { AnotacaoCard } from '@/components/AnotacaoCard/AnotacaoCard';
 import { useTheme } from '@/contexts/ThemeContext';
-import { lightColors, darkColors } from '@/components/theme/colors';
+import { lightColors } from '@/components/theme/colors';
+import { BaseButton } from '@/components/BaseButton/BaseButton';
 
 export default function AnotacoesScreen() {
   const { state, deleteAnotacao, updateAnotacao } = useEstuday();
-  const { activeTheme } = useTheme();
-  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+  const { colors, typography } = useTheme();
   const styles = makeStyles(colors);
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAnotacao, setEditingAnotacao] = useState<AnotacaoCalendario | null>(null);
   const [editText, setEditText] = useState('');
 
-  const sortedAnotacoes = useMemo(() => {
-    return [...state.anotacoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-  }, [state.anotacoes]);
+  const sortedAnotacoes = useMemo(() =>
+    [...state.anotacoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
+    [state.anotacoes]
+  );
 
   const handleEditAnotacao = (anotacao: AnotacaoCalendario) => {
     setEditingAnotacao(anotacao);
@@ -50,10 +51,10 @@ export default function AnotacoesScreen() {
     ]);
   };
 
-  const formatDateExtended = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-  };
+  const formatDateExtended = (dateString: string) =>
+    new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+    });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,10 +62,10 @@ export default function AnotacoesScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <FileText size={24} color={colors.success} />
-          <Text style={styles.headerTitle}>Anotações</Text>
+          <Text style={[typography.screenTitle, { color: colors.text.primary }]}>Anotações</Text>
         </View>
         <View style={styles.headerStats}>
-          <Text style={styles.statsText}>
+          <Text style={[typography.small, { color: colors.success }]}>
             {state.anotacoes.length} {state.anotacoes.length === 1 ? 'anotação' : 'anotações'}
           </Text>
         </View>
@@ -85,11 +86,17 @@ export default function AnotacoesScreen() {
         ) : (
           <View style={styles.emptyState}>
             <FileText size={64} color={colors.border.medium} />
-            <Text style={styles.emptyText}>Nenhuma anotação encontrada</Text>
-            <Text style={styles.emptySubtext}>Adicione anotações através do calendário</Text>
+            <Text style={[typography.body, { color: colors.text.secondary, textAlign: 'center' }]}>
+              Nenhuma anotação encontrada
+            </Text>
+            <Text style={[typography.caption, { color: colors.text.tertiary, textAlign: 'center' }]}>
+              Adicione anotações através do calendário
+            </Text>
             <View style={styles.emptyInstructions}>
-              <Text style={styles.instructionTitle}>Como adicionar anotações:</Text>
-              <Text style={styles.instructionText}>
+              <Text style={[typography.caption, { color: colors.success, fontWeight: '600', marginBottom: 8 }]}>
+                Como adicionar anotações:
+              </Text>
+              <Text style={[typography.small, { color: colors.success, lineHeight: 18 }]}>
                 • Vá para a tela do calendário{'\n'}
                 • Toque em qualquer dia{'\n'}
                 • Use a seção "Anotações" para escrever suas observações
@@ -103,16 +110,16 @@ export default function AnotacoesScreen() {
       <Modal visible={editModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleCancelEdit}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={handleCancelEdit} style={{ padding: 4 }}>
-              <X size={24} color={colors.text.secondary} />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Editar Anotação</Text>
-            <TouchableOpacity onPress={handleSaveEdit} style={styles.modalSaveButton}>
-              <Text style={styles.modalSaveButtonText}>Salvar</Text>
-            </TouchableOpacity>
+            <BaseButton variant="secondary" size="sm" onPress={handleCancelEdit}>
+              Cancelar
+            </BaseButton>
+            <Text style={[typography.cardTitle, { color: colors.text.primary }]}>Editar Anotação</Text>
+            <BaseButton variant="success" size="sm" onPress={handleSaveEdit}>
+              Salvar
+            </BaseButton>
           </View>
           <View style={styles.modalContent}>
-            <Text style={styles.modalDateLabel}>
+            <Text style={[typography.caption, { color: colors.success, fontWeight: '600', marginBottom: 16, textTransform: 'capitalize' }]}>
               {editingAnotacao && formatDateExtended(editingAnotacao.data)}
             </Text>
             <TextInput
@@ -137,23 +144,13 @@ function makeStyles(colors: typeof lightColors) {
     container: { flex: 1, backgroundColor: colors.background.secondary },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.background.primary, borderBottomWidth: 1, borderBottomColor: colors.border.light },
     headerContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: colors.text.primary },
     headerStats: { backgroundColor: colors.background.success, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-    statsText: { fontSize: 12, fontWeight: '600', color: colors.success },
     content: { flex: 1, padding: 20 },
     emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60, gap: 16 },
-    emptyText: { fontSize: 18, color: colors.text.secondary, textAlign: 'center', maxWidth: 250 },
-    emptySubtext: { fontSize: 14, color: colors.text.tertiary, textAlign: 'center', maxWidth: 250 },
     emptyInstructions: { marginTop: 20, padding: 16, backgroundColor: colors.background.success, borderRadius: 12, maxWidth: 280 },
-    instructionTitle: { fontSize: 14, fontWeight: '600', color: colors.success, marginBottom: 8 },
-    instructionText: { fontSize: 12, color: colors.success, lineHeight: 18 },
     modalContainer: { flex: 1, backgroundColor: colors.background.secondary },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.background.primary, borderBottomWidth: 1, borderBottomColor: colors.border.light },
-    modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text.primary },
-    modalSaveButton: { backgroundColor: colors.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-    modalSaveButtonText: { color: colors.text.white, fontWeight: '600', fontSize: 14 },
     modalContent: { flex: 1, padding: 20 },
-    modalDateLabel: { fontSize: 14, color: colors.success, fontWeight: '600', marginBottom: 16, textTransform: 'capitalize' },
     modalTextInput: { flex: 1, backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, fontSize: 16, color: colors.text.primary, borderWidth: 1, borderColor: colors.border.light },
   });
 }
