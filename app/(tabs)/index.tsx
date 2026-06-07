@@ -5,8 +5,13 @@ import { BookOpen, Calendar, Clock, CircleCheck as CheckCircle, TrendingUp, User
 import { useEstuday, getGreeting } from '@/contexts/StudayContext';
 import { formatDate, isFutureDate, isToday } from '@/utils/dateUtils';
 import { router } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors, darkColors } from '@/components/theme/colors';
 
 export default function HomeScreen() {
+  const { activeTheme } = useTheme();
+  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+
   const { state } = useEstuday();
 
   // Estatísticas

@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors, darkColors } from '@/components/theme/colors';
 import {
   View,
   Text,
@@ -16,6 +18,9 @@ import { AnotacaoCard } from '@/components/AnotacaoCard/AnotacaoCard';
 import { colors } from '@/components/theme/colors';
 
 export default function AnotacoesScreen() {
+  const { activeTheme } = useTheme();
+  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+
   const { state, deleteAnotacao, updateAnotacao } = useEstuday();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAnotacao, setEditingAnotacao] = useState<AnotacaoCalendario | null>(null);

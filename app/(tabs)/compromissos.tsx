@@ -13,11 +13,15 @@ import { useEstuday, Compromisso } from '@/contexts/StudayContext';
 import { CompromissoCard } from '@/components/CompromissoCard/CompromissoCard';
 import { CompromissoModal } from '@/components/CompromissoModal/CompromissoModal';
 import { formatDate } from '@/utils/dateUtils';
-import { colors } from '@/components/theme/colors';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors, darkColors } from '@/components/theme/colors';
 
 type FilterType = 'todos' | 'pendentes' | 'concluidos' | 'hoje';
 
 export default function CompromissosScreen() {
+  const { activeTheme } = useTheme();
+  const colors = activeTheme === 'dark' ? darkColors : lightColors;
+
   const { state, updateCompromisso, deleteCompromisso } = useEstuday();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCompromisso, setEditingCompromisso] = useState<Compromisso | null>(null);
