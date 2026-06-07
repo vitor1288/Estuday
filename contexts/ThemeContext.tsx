@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { lightColors, darkColors, ColorScheme } from '@/components/theme/colors';
+import { typography } from '@/components/theme/typography';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ActiveTheme = 'light' | 'dark';
@@ -8,11 +10,12 @@ export type ActiveTheme = 'light' | 'dark';
 interface ThemeContextType {
   preference: ThemePreference;
   activeTheme: ActiveTheme;
+  colors: ColorScheme;
+  typography: typeof typography;
   setTheme: (theme: ThemePreference) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
 const STORAGE_KEY = '@estuday:themePreference';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -21,14 +24,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((val) => {
-      if (val === 'light' || val === 'dark' || val === 'system') {
-        setPreference(val);
-      }
+      if (val === 'light' || val === 'dark' || val === 'system') setPreference(val);
     });
   }, []);
 
   const activeTheme: ActiveTheme =
     preference === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : preference;
+
+  const colors: ColorScheme = activeTheme === 'dark' ? darkColors : lightColors;
 
   const setTheme = async (theme: ThemePreference) => {
     setPreference(theme);
@@ -36,7 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ preference, activeTheme, setTheme }}>
+    <ThemeContext.Provider value={{ preference, activeTheme, colors, typography, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
