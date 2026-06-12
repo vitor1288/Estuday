@@ -57,7 +57,7 @@ const darkColors = {
   primary: '#60A5FA',
   success: '#34D399',
   warning: '#FB923C',
-  danger: '#F87171',
+  danger: '#f87171',
   text: {
     primary: '#F1F5F9',
     secondary: '#94A3B8',
@@ -71,7 +71,7 @@ const darkColors = {
     success: '#052e16',
     warning: '#1c1008',
     danger: '#1f0a0a',
-    expired: '#1f0a0a',
+    expired: '#531818',
   },
   border: {
     light: '#334155',

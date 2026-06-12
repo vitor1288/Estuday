@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useEstuday } from '@/contexts/StudayContext';
 import { getMonthName, getDaysInMonth, getFirstDayOfMonth, createDateString, isToday } from '@/utils/dateUtils';
 import { CalendarDay } from '@/components/Calendar/CalendarDay';
+import { useTheme } from '@/contexts/ThemeContext';
+import { lightColors } from '@/components/theme/colors';
 
 interface CalendarProps {
   onDayPress: (date: string) => void;
@@ -11,127 +13,75 @@ interface CalendarProps {
 
 export function Calendar({ onDayPress }: CalendarProps) {
   const { state } = useEstuday();
+  const { colors, typography } = useTheme();
+  const styles = makeStyles(colors);
   const [currentDate, setCurrentDate] = useState(new Date());
-  
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  
   const daysInMonth = getDaysInMonth(year, month);
   const firstDayOfMonth = getFirstDayOfMonth(year, month);
-  
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  const previousMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const previousMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+  const getCompromissosForDate = (dateString: string) =>
+    state.compromissos.filter(c => c.data === dateString && !c.concluido);
 
-  const getCompromissosForDate = (dateString: string) => {
-    // Filtrar apenas compromissos não concluídos, igual ao DayModal
-    return state.compromissos.filter(c => c.data === dateString && !c.concluido);
-  };
-
-  const getAnotacoesForDate = (dateString: string) => {
-    return state.anotacoes.filter(a => a.data === dateString);
-  };
+  const getAnotacoesForDate = (dateString: string) =>
+    state.anotacoes.filter(a => a.data === dateString);
 
   const renderCalendarWeeks = () => {
-    const weeks = [];
-    const totalCells = 42; // 6 semanas × 7 dias
-    const allDays = [];
-    
-    // Espaços vazios para o início do mês
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      allDays.push(null);
-    }
-    
-    // Dias do mês
-    for (let day = 1; day <= daysInMonth; day++) {
-      allDays.push(day);
-    }
-    
-    // Preencher o resto com null para completar 42 células
-    while (allDays.length < totalCells) {
-      allDays.push(null);
-    }
-    
-    // Dividir em semanas (6 semanas de 7 dias cada)
-    for (let weekIndex = 0; weekIndex < 6; weekIndex++) {
-      const weekDays = [];
-      
-      for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-        const cellIndex = weekIndex * 7 + dayIndex;
-        const day = allDays[cellIndex];
-        
-        if (day === null) {
-          // Célula vazia
-          weekDays.push(
-            <View key={`empty-${cellIndex}`} style={styles.emptyDay} />
-          );
-        } else {
-          // Dia com conteúdo
+    const allDays: (number | null)[] = [];
+    for (let i = 0; i < firstDayOfMonth; i++) allDays.push(null);
+    for (let day = 1; day <= daysInMonth; day++) allDays.push(day);
+    while (allDays.length < 42) allDays.push(null);
+
+    return Array.from({ length: 6 }, (_, weekIndex) => (
+      <View key={`week-${weekIndex}`} style={styles.weekRow}>
+        {Array.from({ length: 7 }, (_, dayIndex) => {
+          const day = allDays[weekIndex * 7 + dayIndex];
+          if (day === null) return <View key={`empty-${weekIndex}-${dayIndex}`} style={styles.emptyDay} />;
           const dateString = createDateString(year, month, day);
-          const today = isToday(dateString);
-          const compromissos = getCompromissosForDate(dateString);
-          const anotacoes = getAnotacoesForDate(dateString);
-          
-          weekDays.push(
+          return (
             <CalendarDay
               key={`day-${day}`}
               day={day}
               dateString={dateString}
-              isToday={today}
-              compromissos={compromissos}
-              anotacoes={anotacoes}
+              isToday={isToday(dateString)}
+              compromissos={getCompromissosForDate(dateString)}
+              anotacoes={getAnotacoesForDate(dateString)}
               onPress={onDayPress}
             />
           );
-        }
-      }
-      
-      // Adicionar a semana completa
-      weeks.push(
-        <View key={`week-${weekIndex}`} style={styles.weekRow}>
-          {weekDays}
-        </View>
-      );
-    }
-    
-    return weeks;
+        })}
+      </View>
+    ));
   };
 
   return (
     <View style={styles.container}>
-      {/* Header do calendário */}
       <View style={styles.header}>
         <TouchableOpacity onPress={previousMonth} style={styles.navButton}>
-          <ChevronLeft size={24} color="#3B82F6" />
+          <ChevronLeft size={24} color={colors.primary} />
         </TouchableOpacity>
-        
-        <Text style={styles.monthYear}>
+        <Text style={[typography.sectionTitle, { color: colors.text.primary }]}>
           {getMonthName(month)} {year}
         </Text>
-        
         <TouchableOpacity onPress={nextMonth} style={styles.navButton}>
-          <ChevronRight size={24} color="#3B82F6" />
+          <ChevronRight size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* Dias da semana */}
       <View style={styles.weekDaysContainer}>
-        {weekDays.map((day, index) => (
+        {weekDays.map((day) => (
           <View key={day} style={styles.weekDayCell}>
-            <Text style={styles.weekDay}>
-              {day}
-            </Text>
+            <Text style={[typography.small, { color: colors.text.secondary }]}>{day}</Text>
           </View>
         ))}
       </View>
 
-      {/* Grid do calendário - Ocupa o espaço restante */}
       <View style={styles.calendarGrid}>
         {renderCalendarWeeks()}
       </View>
@@ -139,59 +89,17 @@ export function Calendar({ onDayPress }: CalendarProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  navButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-  },
-  monthYear: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
-  weekDaysContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  weekDayCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  weekDay: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  calendarGrid: {
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  weekRow: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  emptyDay: {
-    width: '14.285714%',
-    flex: 1,
-  },
-});
+function makeStyles(colors: typeof lightColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background.primary },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border.light },
+    navButton: { padding: 8, borderRadius: 8, backgroundColor: colors.background.tertiary },
+    weekDaysContainer: { flexDirection: 'row', paddingHorizontal: 8, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border.light },
+    weekDayCell: { flex: 1, alignItems: 'center', paddingVertical: 8 },
+    calendarGrid: { flex: 1, paddingHorizontal: 8 },
+    weekRow: { flexDirection: 'row', flex: 1 },
+    emptyDay: { width: '14.285714%', flex: 1 },
+  });
+}
 
 export { Calendar };
