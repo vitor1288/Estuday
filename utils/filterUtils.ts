@@ -4,69 +4,79 @@ export type OrderOption = 'proximo' | 'novo' | 'antigo' | 'alfabetica';
 export type OrderDirection = 'asc' | 'desc';
 
 /**
- * Filtra e ordena uma lista de compromissos com base em múltiplos critérios combinados.
- * Suporta busca textual ("Ctrl + F"), filtros categóricos e inversão dinâmica por setas.
+ * Filtra e ordena uma lista de compromissos com suporte a múltiplos filtros simultâneos.
+ * Versão segura: Aceita null, string única ou arrays, sem quebrar as outras telas do App.
  */
 export function filtrarEOrdenarCompromissos(
   lista: Compromisso[],
   buscaTexto: string,
-  materiaFiltroId: string | null,
-  dataFiltro: string | null, // Formato YYYY-MM-DD
+  materiasFiltro: string | string[] | null | undefined,
+  categoriasOuDataFiltro: string | string[] | null | undefined,
   opcaoOrdenacao: OrderOption,
   direcao: OrderDirection
 ): Compromisso[] {
   
-  // Cria uma cópia rasa da lista para evitar mutação direta no estado do React
   let resultado = [...lista];
 
-  // 1. FILTRO DE TEXTO ("Ctrl + F") - Busca correspondências no título ou no horário
-  if (buscaTexto.trim()) {
+  // 1. FILTRO DE TEXTO ("Ctrl + F")
+  if (buscaTexto && buscaTexto.trim()) {
     const textoUpper = buscaTexto.toUpperCase();
     resultado = resultado.filter(item => 
       (item.titulo && item.titulo.toUpperCase().includes(textoUpper)) || 
+      (item.descricao && item.descricao.toUpperCase().includes(textoUpper)) ||
       (item.hora && item.hora.includes(textoUpper))
     );
   }
 
-  // 2. FILTRO POR MATÉRIA SPECÍFICA
-  if (materiaFiltroId) {
-    resultado = resultado.filter(item => item.materiaId === materiaFiltroId);
+  // 2. FILTRO POR MATÉRIAS (Seguro contra null)
+  if (materiasFiltro) {
+    const materiasArray = Array.isArray(materiasFiltro) ? materiasFiltro : [materiasFiltro];
+    
+    if (materiasArray.length > 0) {
+      resultado = resultado.filter(item => item.materiaId && materiasArray.includes(item.materiaId));
+    }
   }
 
-  // 3. FILTRO POR DATA SELECIONADA
-  if (dataFiltro) {
-    resultado = resultado.filter(item => item.data === dataFiltro);
+  // 3. FILTRO POR CATEGORIAS OU DATAS (Seguro contra null e retrocompatível)
+  if (categoriasOuDataFiltro) {
+    const filtroArray = Array.isArray(categoriasOuDataFiltro) ? categoriasOuDataFiltro : [categoriasOuDataFiltro];
+    
+    if (filtroArray.length > 0) {
+      resultado = resultado.filter(item => {
+        if (filtroArray[0].includes('-') && filtroArray[0].length === 10) {
+          return item.data === filtroArray[0];
+        }
+        
+        const catId = item.categoriaId || item.categoria;
+        return catId && filtroArray.includes(catId);
+      });
+    }
   }
 
-  // 4. ALGORITMO DE ORDENAÇÃO AVANÇADA
+  // 4. ALGORITMO DE ORDENAÇÃO
   resultado.sort((a, b) => {
     let comparacao = 0;
 
     switch (opcaoOrdenacao) {
       case 'proximo': {
-        // Calcula a proximidade absoluta em milissegundos em relação ao dia de hoje
-        const hoje = new Date().setHours(0, 0, 0, 0);
+        // ✨ CORRIGIDO: Ordem cronológica real (Data mais antiga para a mais nova)
         const dataA = new Date(a.data).getTime();
         const dataB = new Date(b.data).getTime();
-        
-        comparacao = Math.abs(dataA - hoje) - Math.abs(dataB - hoje);
+        comparacao = dataA - dataB;
         break;
       }
       case 'novo':
-        // Itens com datas mais futuras/recentes primeiro
         comparacao = new Date(b.data).getTime() - new Date(a.data).getTime();
         break;
       case 'antigo':
-        // Itens com datas mais passadas primeiro
         comparacao = new Date(a.data).getTime() - new Date(b.data).getTime();
         break;
       case 'alfabetica':
-        // Comparação de string segura contra acentuações brasileiras
-        comparacao = a.titulo.localeCompare(b.titulo, 'pt-BR');
+        comparacao = (a.titulo || '').localeCompare(b.titulo || '');
         break;
     }
 
-    // Se a direção da seta for 'desc' (descendente), inverte o sinal do resultado matemático
+    // Aplica a direção (Crescente vs Decrescente / A-Z vs Z-A)
     return direcao === 'asc' ? comparacao : -comparacao;
   });
 

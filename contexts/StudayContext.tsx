@@ -69,9 +69,11 @@ type EstudayAction =
   | { type: 'ADD_CATEGORIA'; payload: Categoria }
   | { type: 'UPDATE_CATEGORIA'; payload: Categoria }
   | { type: 'DELETE_CATEGORIA'; payload: string }
+  | { type: 'SET_CATEGORIAS'; payload: Categoria[] } // ✨ NOVO: Permite reordenar a lista inteira
   | { type: 'ADD_MATERIA'; payload: Materia }
   | { type: 'UPDATE_MATERIA'; payload: Materia }
-  | { type: 'DELETE_MATERIA'; payload: string };
+  | { type: 'DELETE_MATERIA'; payload: string }
+  | { type: 'SET_MATERIAS'; payload: Materia[] }; // ✨ NOVO: Permite reordenar a lista inteira
 
 const initialState: EstudayState = {
   compromissos: [],
@@ -121,9 +123,11 @@ function reducer(state: EstudayState, action: EstudayAction): EstudayState {
     case 'ADD_CATEGORIA': return { ...state, categorias: [...state.categorias, action.payload] };
     case 'UPDATE_CATEGORIA': return { ...state, categorias: state.categorias.map(c => c.id === action.payload.id ? action.payload : c) };
     case 'DELETE_CATEGORIA': return { ...state, categorias: state.categorias.filter(c => c.id !== action.payload) };
+    case 'SET_CATEGORIAS': return { ...state, categorias: action.payload }; // ✨ Ação Mapeada
     case 'ADD_MATERIA': return { ...state, materias: [...state.materias, action.payload] };
     case 'UPDATE_MATERIA': return { ...state, materias: state.materias.map(m => m.id === action.payload.id ? action.payload : m) };
     case 'DELETE_MATERIA': return { ...state, materias: state.materias.filter(m => m.id !== action.payload) };
+    case 'SET_MATERIAS': return { ...state, materias: action.payload }; // ✨ Ação Mapeada
     default: return state;
   }
 }
@@ -138,7 +142,7 @@ export const NOTIFICATION_OPTIONS = [
   { label: '6 horas antes', tempo: 6, unidade: 'horas' as const, enabled: true },
   { label: '12 horas antes', tempo: 12, unidade: 'horas' as const, enabled: true },
   { label: '1 dia antes', tempo: 1, unidade: 'dias' as const, enabled: true },
-  { label: '2 dias antes', tempo: 2, unidade: 'dias' as const, enabled: true },
+  { label: '2 dias antes', tempo: 2, legacy: true, unidade: 'dias' as const, enabled: true },
   { label: '3 dias antes', tempo: 3, unidade: 'dias' as const, enabled: true },
   { label: '1 semana antes', tempo: 7, unidade: 'dias' as const, enabled: true },
 ];
@@ -150,7 +154,6 @@ export const getNotificationText = (config?: NotificationConfig): string => {
   return `${config.tempo} ${config.unidade} antes`;
 };
 
-// EXPORTAÇÃO DO CONTEXT (Protegido com os dois nomes)
 export const EstudayContext = createContext<any>(null);
 export const StudayContext = EstudayContext;
 
@@ -215,6 +218,38 @@ export function EstudayProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAnotacao = async (id: string) => dispatch({ type: 'DELETE_ANOTACAO', payload: id });
   const updateProfile = async (profile: UserProfile) => dispatch({ type: 'UPDATE_PROFILE', payload: profile });
+  
+  // ✨ FUNÇÕES DE REORDENAÇÃO ADICIONADAS
+  const reordenarMaterias = (id: string, direcao: 'up' | 'down') => {
+    const index = state.materias.findIndex(m => m.id === id);
+    if (index === -1) return;
+
+    const novoIndex = direcao === 'up' ? index - 1 : index + 1;
+    if (novoIndex < 0 || novoIndex >= state.materias.length) return;
+
+    const novasMaterias = [...state.materias];
+    const temp = novasMaterias[index];
+    novasMaterias[index] = novasMaterias[novoIndex];
+    novasMaterias[novoIndex] = temp;
+
+    dispatch({ type: 'SET_MATERIAS', payload: novasMaterias });
+  };
+
+  const reordenarCategorias = (id: string, direcao: 'up' | 'down') => {
+    const index = state.categorias.findIndex(c => c.id === id);
+    if (index === -1) return;
+
+    const novoIndex = direcao === 'up' ? index - 1 : index + 1;
+    if (novoIndex < 0 || novoIndex >= state.categorias.length) return;
+
+    const novasCategorias = [...state.categorias];
+    const temp = novasCategorias[index];
+    novasCategorias[index] = novasCategorias[novoIndex];
+    novasCategorias[novoIndex] = temp;
+
+    dispatch({ type: 'SET_CATEGORIAS', payload: novasCategorias });
+  };
+
   const getAnotacoesPorData = (data: string): AnotacaoCalendario[] => state.anotacoes.filter(anotacao => anotacao.data === data);
   const getCompromissosPorData = (data: string): Compromisso[] => state.compromissos.filter(compromisso => compromisso.data === data);
 
@@ -223,6 +258,9 @@ export function EstudayProvider({ children }: { children: React.ReactNode }) {
       value={{
         state,
         dispatch,
+        compromissos: state.compromissos,
+        anotacoes: state.anotacoes,
+        userProfile: state.userProfile,
         categorias: state.categorias,
         categories: state.categorias,
         materias: state.materias,
@@ -240,7 +278,9 @@ export function EstudayProvider({ children }: { children: React.ReactNode }) {
         addMateria: (nome: string) => dispatch({ type: 'ADD_MATERIA', payload: { id: Date.now().toString(), nome } }),
         deleteMateria: (id: string) => dispatch({ type: 'DELETE_MATERIA', payload: id }),
         addCategoria: (nome: string, cor: string) => dispatch({ type: 'ADD_CATEGORIA', payload: { id: Date.now().toString(), nome, cor } }),
-        deleteCategoria: (id: string) => dispatch({ type: 'DELETE_CATEGORIA', payload: id })
+        deleteCategoria: (id: string) => dispatch({ type: 'DELETE_CATEGORIA', payload: id }),
+        reordenarMaterias, // ✨ Exportando para o modal usar
+        reordenarCategorias // ✨ Exportando para o modal usar
       }}
     >
       {children}
@@ -248,9 +288,7 @@ export function EstudayProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// OS "ESCUDOS": Garante que não importa como o _layout.tsx chama o ficheiro, ele vai encontrar
 export const StudayProvider = EstudayProvider;
 export default EstudayProvider;
-
 export const useEstuday = () => useContext(EstudayContext);
 export const useStuday = useEstuday;

@@ -1,3 +1,4 @@
+//aaaaa aaa aaa aaa
 ./expo-env.d.ts
 ./hooks/useFrameworkReady.ts
 ./package.json

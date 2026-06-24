@@ -34,23 +34,23 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
   const [categoriaId, setCategoriaId] = useState('');
   const [materiaId, setMateriaId] = useState('');
   
+  // ✨ CORREÇÃO 2: Configurado por padrão ativo para "1 dia antes"
   const [notificationConfig, setNotificationConfig] = useState<MultipleNotificationConfig>({
-    notifications: [{ enabled: false, tempo: 1, unidade: 'dias' }]
+    notifications: [{ enabled: true, tempo: 1, unidade: 'dias' }]
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   useEffect(() => {
     if (visible) {
       if (compromisso) {
         setTitulo(compromisso.titulo);
-        setIsTituloEditado(true); // Se for edição, não atualiza o título automaticamente
+        setIsTituloEditado(true);
         setDescricao(compromisso.descricao || '');
         setData(compromisso.data);
         setHora(compromisso.hora);
         setCategoriaId(compromisso.categoriaId || compromisso.categoria || listaCategorias[0]?.id || '');
-        setMateriaId(compromisso.materiaId || listaMaterias[0]?.id || '');
+        setMateriaId(compromisso.materiaId || compromisso.materia || listaMaterias[0]?.id || '');
         if (compromisso.notificacaoConfig) {
           setNotificationConfig(compromisso.notificacaoConfig);
         }
@@ -62,12 +62,12 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
         setHora('09:00');
         setCategoriaId(listaCategorias[0]?.id || '');
         setMateriaId(listaMaterias[0]?.id || '');
-        setNotificationConfig({ notifications: [{ enabled: false, tempo: 1, unidade: 'dias' }] });
+        // ✨ Garantia de resetar para padrão ativo em novo compromisso
+        setNotificationConfig({ notifications: [{ enabled: true, tempo: 1, unidade: 'dias' }] });
       }
     }
   }, [visible, compromisso, initialDate]);
 
-  // Título Automático: [Categoria] de [Matéria]
   useEffect(() => {
     if (!isTituloEditado && !compromisso) {
       const cat = listaCategorias.find((c: any) => c.id === categoriaId);
@@ -84,6 +84,10 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
       return;
     }
 
+    // ✨ Busca o objeto completo da categoria e matéria selecionadas para extrair o nome técnico
+    const catSelecionada = listaCategorias.find((c: any) => c.id === categoriaId);
+    const matSelecionada = listaMaterias.find((m: any) => m.id === materiaId);
+
     const compromissoData = {
       titulo: titulo.trim(),
       descricao: descricao.trim(),
@@ -91,6 +95,9 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
       hora,
       categoriaId,
       materiaId,
+      // ✨ CORREÇÃO: Salva o NOME por extenso para o Calendário gerar o corte/abreviação perfeita!
+      categoria: catSelecionada ? catSelecionada.nome : categoriaId, 
+      materia: matSelecionada ? matSelecionada.nome : materiaId,     
       notificacaoConfig: notificationConfig,
       concluido: compromisso?.concluido || false
     };
@@ -185,11 +192,7 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
           <View style={styles.row}>
             <View style={[styles.field, { flex: 1, marginRight: 8 }]}>
               <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Data</Text>
-              <TouchableOpacity style={styles.timeButton} onPress={() => setShowDatePicker(true)}>
-                <Text style={[typography.body, { color: colors.text.primary }]}>
-                  {data.split('-').reverse().join('/')}
-                </Text>
-              </TouchableOpacity>
+              <DatePicker value={data} onDateChange={setData} />
             </View>
 
             <View style={[styles.field, { flex: 1, marginLeft: 8 }]}>
@@ -218,16 +221,6 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
           </View>
         </ScrollView>
       </View>
-
-      <DatePicker
-        visible={showDatePicker}
-        date={data}
-        onClose={() => setShowDatePicker(false)}
-        onSelect={(newDate) => {
-          setData(newDate);
-          setShowDatePicker(false);
-        }}
-      />
 
       <Modal visible={showTimePicker} transparent animationType="fade">
         <View style={styles.modalOverlay}>
