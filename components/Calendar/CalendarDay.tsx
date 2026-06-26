@@ -2,11 +2,14 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/components/theme/colors';
+// ✨ ADICIONADO: Importar o contexto para puxarmos as cores reais das suas categorias
+import { useEstuday } from '@/contexts/StudayContext';
 
 interface Compromisso {
   id: string;
   data: string;
   categoria: string;
+  categoriaId?: string;
   titulo: string;
   hora: string;
 }
@@ -29,20 +32,44 @@ interface CalendarDayProps {
 export function CalendarDay({ day, dateString, isToday, compromissos, anotacoes, onPress }: CalendarDayProps) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  
+  // ✨ Puxa a lista de categorias que você criou no aplicativo
+  const { categorias, categories } = useEstuday();
+  const listaCategorias = categorias || categories || [];
 
-  const getClassificationColor = (categoria: string) => {
+  const getClassificationColor = (categoriaNomeOuId: string) => {
+    // Procura a categoria na lista global criada no App pelo Nome ou ID
+    const catEncontrada = listaCategorias.find(
+      (c: any) => c.nome === categoriaNomeOuId || c.id === categoriaNomeOuId
+    );
+    
+    // Se encontrar a categoria que você criou, retorna a cor correta dela!
+    if (catEncontrada && catEncontrada.cor) {
+      return catEncontrada.cor;
+    }
+    
+    // Mapa de segurança (fallback) para categorias muito antigas
     const map: Record<string, string> = {
-      aula: colors.category.aula,
-      prova: colors.category.prova,
-      trabalho: colors.category.trabalho,
-      outro: colors.category.outro,
+      aula: colors.category?.aula || '#3B82F6',
+      prova: colors.category?.prova || '#EF4444',
+      trabalho: colors.category?.trabalho || '#F97316',
+      outro: colors.category?.outro || '#8B5CF6',
     };
-    return map[categoria] || colors.text.tertiary;
+    return map[categoriaNomeOuId?.toLowerCase()] || colors.text.tertiary;
   };
 
   const getClassificationAbbr = (categoria: string) => {
-    const abbr: Record<string, string> = { aula: 'AULA', prova: 'PROVA', trabalho: 'TRAB', outro: 'OUTRO' };
-    return abbr[categoria] || categoria.substring(0, 4).toUpperCase();
+    if (!categoria) return 'UNDE';
+    
+    const abbr: Record<string, string> = { 
+      aula: 'AULA', 
+      prova: 'PROVA', 
+      trabalho: 'TRAB', 
+      outro: 'OUTRO' 
+    };
+    
+    // ✨ CORREÇÃO: Aumentado o limite para 6 letras (substring 0 a 6)
+    return abbr[categoria.toLowerCase()] || categoria.substring(0, 6).toUpperCase();
   };
 
   const hasOverdueCompromissos = () => {
@@ -118,8 +145,18 @@ export function CalendarDay({ day, dateString, isToday, compromissos, anotacoes,
 
 function makeStyles(colors: typeof lightColors) {
   return StyleSheet.create({
-    dayContainer: { width: '14.285714%', flex: 1, justifyContent: 'flex-start', alignItems: 'center', borderRadius: 8, margin: 1, backgroundColor: colors.background.secondary },
-    todayContainer: { backgroundColor: '#3a376a' },
+    dayContainer: { 
+      width: '14.285714%', 
+      flex: 1, 
+      justifyContent: 'flex-start', 
+      alignItems: 'center', 
+      borderRadius: 8, 
+      margin: 1, 
+      backgroundColor: colors.background.secondary 
+    },
+    todayContainer: { 
+      backgroundColor: colors.calendar.todayBackground,
+    },
     dayContent: { flex: 1, width: '100%', padding: 4, alignItems: 'center' },
     dayNumberContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     dayNumber: { fontSize: 16, color: colors.text.primary, fontWeight: '500' },
