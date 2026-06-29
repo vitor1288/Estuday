@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FileText } from 'lucide-react-native';
 import { useEstuday, AnotacaoCalendario } from '@/contexts/StudayContext';
@@ -30,7 +30,8 @@ export default function AnotacoesScreen() {
 
    const handleSaveEdit = async () => {
     if (editingAnotacao && editText.trim()) {
-      await updateAnotacao({ ...editingAnotacao, texto: editText.trim() });
+      // CORREÇÃO: Passando id e texto separadamente, conforme esperado pelo StudayContext
+      await updateAnotacao(editingAnotacao.id, editText.trim());
       setEditModalVisible(false);
       setEditingAnotacao(null);
       setEditText('');
@@ -131,6 +132,15 @@ export default function AnotacoesScreen() {
               multiline
               textAlignVertical="top"
               autoFocus
+              // ⌨️ Atalho Inteligente para Web
+              onKeyPress={(e: any) => {
+                if (Platform.OS === 'web') {
+                  if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  }
+                }
+              }}
             />
           </View>
         </SafeAreaView>

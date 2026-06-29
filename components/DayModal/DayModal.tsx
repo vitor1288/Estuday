@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'; 
-import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform } from 'react-native';
 import { X, Plus, Edit3, Trash2, Calendar, CalendarPlus } from 'lucide-react-native';
 import { useEstuday, Compromisso, AnotacaoCalendario } from '@/contexts/StudayContext';
 import { formatDateBR } from '@/utils/dateUtils';
@@ -122,6 +122,15 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                 placeholder="Adicionar nova anotação..."
                 placeholderTextColor={colors.text.tertiary}
                 multiline
+                // ⌨️ Captura o Enter na criação de anotação (Web)
+                onKeyPress={(e: any) => {
+                  if (Platform.OS === 'web') {
+                    if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                      e.preventDefault(); 
+                      handleAddAnotacao();
+                    }
+                  }
+                }}
               />
               <TouchableOpacity 
                 style={[styles.addButton, !novaAnotacao.trim() && styles.addButtonDisabled]}
@@ -142,6 +151,15 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                       onChangeText={setTextoEditando}
                       multiline
                       autoFocus
+                      // ⌨️ Captura o Enter na edição de anotação (Web)
+                      onKeyPress={(e: any) => {
+                        if (Platform.OS === 'web') {
+                          if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                            e.preventDefault();
+                            handleSaveEdit(anotacao.id);
+                          }
+                        }
+                      }}
                     />
                     <View style={styles.editActions}>
                       <TouchableOpacity onPress={() => setAnotacaoEditando(null)}>

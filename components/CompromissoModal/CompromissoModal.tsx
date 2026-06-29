@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useEstuday, Compromisso } from '@/contexts/StudayContext';
 import { formatDate } from '@/utils/dateUtils';
@@ -142,20 +142,31 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
           <View style={styles.field}>
             <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Título</Text>
             <TextInput
-              style={styles.input}
-              value={titulo}
-              // 🟢 ALTERADO: Se o usuário limpar o input manualmente, desativamos a trava para o automático voltar a reinar
-              onChangeText={(text) => {
-                setTitulo(text);
-                if (text.trim() === '') {
-                  setIsTituloEditado(false);
-                } else {
-                  setIsTituloEditado(true);
-                }
-              }}
-              placeholder="Ex: Prova de Matemática"
-              placeholderTextColor={colors.text.tertiary}
-            />
+               style={styles.input}
+               value={titulo}
+               // 🟢 ALTERADO: Se o usuário limpar o input manualmente, desativamos a trava para o automático voltar a reinar
+               onChangeText={(text) => {
+                 setTitulo(text);
+                 if (text.trim() === '') {
+                   setIsTituloEditado(false);
+                 } else {
+                   setIsTituloEditado(true);
+                 }
+               }}
+               placeholder="Ex: Prova de Matemática"
+               placeholderTextColor={colors.text.tertiary}
+               
+               // ⌨️ Atalho Inteligente para Salvar com Enter na Web
+               onKeyPress={(e: any) => {
+                 if (Platform.OS === 'web') {
+                   // Se pressionar Enter SOZINHO (sem o Shift), salva o compromisso
+                   if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                     e.preventDefault(); // Impede o comportamento padrão
+                     handleSave();       // ⚠️ Verifique se sua função de salvar o compromisso se chama 'handleSave'
+                   }
+                 }
+               }}
+             />
           </View>
 
           <View style={styles.field}>
@@ -222,15 +233,26 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
 
           <View style={[styles.field, { marginBottom: 40 }]}>
             <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Descrição</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={descricao}
-              onChangeText={setDescricao}
-              placeholder="Adicione detalhes ao seu compromisso..."
-              placeholderTextColor={colors.text.tertiary}
-              multiline
-              numberOfLines={4}
-            />
+           <TextInput
+             style={[styles.input, styles.textArea]}
+             value={descricao}
+             onChangeText={setDescricao}
+             placeholder="Adicione detalhes ao seu compromisso..."
+             placeholderTextColor={colors.text.tertiary}
+             multiline
+             numberOfLines={4}
+             
+             // ⌨️ Atalho Inteligente para Salvar com Enter na Web
+             onKeyPress={(e: any) => {
+               if (Platform.OS === 'web') {
+                 // Se pressionar Enter SOZINHO (sem o Shift), salva o compromisso
+                 if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                   e.preventDefault(); // Impede a quebra de linha automática do multiline
+                   handleSave();       // ⚠️ Lembre-se de verificar se sua função de salvar se chama 'handleSave'
+                 }
+               }
+             }}
+           />
           </View>
         </ScrollView>
       </View>
