@@ -1,170 +1,182 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Edit3, Trash2, CheckCircle, Circle, Bell, BellOff } from 'lucide-react-native';
-import { Compromisso, getNotificationText, useEstuday } from '@/contexts/StudayContext';
-import { formatDateBR, isExpired } from '@/utils/dateUtils';
+import { CheckCircle, Circle, Calendar as CalendarIcon, Clock, Bell, BellOff } from 'lucide-react-native';
+import { Compromisso, useEstuday } from '@/contexts/StudayContext';
+import { isExpired } from '@/utils/dateUtils';
 import { BaseCard } from '@/components/BaseCard/BaseCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/components/theme/colors';
-import { MultipleNotificationConfig } from '@/components/NotificationSelector/NotificationSelector';
 
 interface CompromissoCardProps {
   compromisso: Compromisso;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void; 
   onToggleComplete: () => void;
   variant?: 'compromisso' | 'compromisso-modal';
   onPress?: () => void;
 }
 
-const getMultipleNotificationText = (config?: MultipleNotificationConfig): string => {
-  if (!config?.notifications?.length) return 'Sem notificação';
-  const enabled = config.notifications.filter(n => n.enabled);
-  if (!enabled.length) return 'Sem notificação';
-  if (enabled.length === 1) return getNotificationText(enabled[0]);
-  return `${enabled.length} lembretes`;
-};
-
 export function CompromissoCard({ 
   compromisso, 
   onEdit, 
-  onDelete, 
   onToggleComplete,
-  variant = 'compromisso',
-  onPress
+  variant = 'compromisso'
 }: CompromissoCardProps) {
   const { colors, typography } = useTheme();
-  const { categorias, categories } = useEstuday(); // Puxa as categorias dinâmicas
+  const { categorias, categories, materias } = useEstuday(); 
   const styles = makeStyles(colors);
 
   // Busca a categoria correta pelo ID
   const listaCategorias = categorias || (categories as any) || [];
   const categoriaObj = listaCategorias.find((c: any) => c.id === compromisso.categoriaId || c.id === compromisso.categoria);
-  const corCategoria = categoriaObj ? categoriaObj.cor : colors.primary;
-  const nomeCategoria = categoriaObj ? categoriaObj.nome : (compromisso.categoria || 'Outro');
+  const corCard = categoriaObj ? categoriaObj.cor : colors.primary;
+  const nomeCategoria = categoriaObj ? categoriaObj.nome : 'Outro';
 
-  const isCompromissoExpired = !compromisso.concluido && isExpired(compromisso.data, compromisso.hora);
-  const notificationsEnabled = compromisso.notificacaoConfig?.notifications?.some(n => n.enabled);
+  // Busca a matéria pelo ID
+  const getMateriaNome = (id: string) => materias?.find((m: any) => m.id === id)?.nome || '';
 
- return (
+  // 🔔 Função para calcular o texto de notificações do compromisso
+  const activeNotificationsCount = (compromisso.notificacaoConfig?.notifications || []).filter(n => n.enabled).length;
+  const hasActiveNotifications = activeNotificationsCount > 0;
+
+  const getNotificationLabel = () => {
+    if (!hasActiveNotifications) {
+      return 'Sem notificação';
+    }
+    if (activeNotificationsCount === 1) {
+      return `1 lembrete`;
+    }
+    return `${activeNotificationsCount} lembretes`;
+  };
+
+  const formatarData = (dataStr: string) => {
+    if (!dataStr) return '';
+    const partes = dataStr.split('-');
+    if (partes.length !== 3) return dataStr;
+    const [y, m, d] = partes;
+    return `${d}/${m}/${y}`;
+  };
+
+  const atrasado = !compromisso.concluido && isExpired(compromisso.data, compromisso.hora);
+
+  let statusCard: 'normal' | 'completed' | 'expired' = 'normal';
+  if (compromisso.concluido) statusCard = 'completed';
+  else if (atrasado) statusCard = 'expired';
+
+  return (
     <BaseCard
       variant={variant}
-      status={compromisso.concluido ? 'completed' : (isCompromissoExpired ? 'expired' : 'normal')}
-      sideBarColor={corCategoria}
-      // 🟢 Passamos undefined para o BaseCard não criar o Touchable global por fora e não "roubar" os cliques
+      status={statusCard}
+      sideBarColor={corCard}
       onPress={undefined} 
       showShadow={true}
     >
-      {/* 🟢 Criamos um container interativo interno: clicar no texto/corpo abre a edição */}
-      <TouchableOpacity 
-        activeOpacity={0.8} 
-        onPress={onEdit}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.header}>
-          {/* 🟢 A bolinha fica totalmente isolada para apenas marcar como concluído */}
-          <TouchableOpacity 
-            onPress={onToggleComplete} 
-            style={styles.checkButton}
-            activeOpacity={0.7}
-            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
-          >
-            {compromisso.concluido ? (
-              <CheckCircle size={24} color={colors.success} />
-            ) : (
-              <Circle size={24} color={isCompromissoExpired ? colors.danger : colors.text.tertiary} />
-            )}
-          </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        
+        {/* Bolinha interativa isolada para concluir */}
+        <TouchableOpacity 
+          onPress={onToggleComplete}
+          style={{ marginRight: 12, paddingVertical: 8, paddingHorizontal: 4 }}
+          activeOpacity={0.7}
+        >
+          {compromisso.concluido ? (
+            <CheckCircle size={22} color={colors.success} />
+          ) : (
+            <Circle size={22} color={atrasado ? colors.danger : colors.text.tertiary} />
+          )}
+        </TouchableOpacity>
 
-          <View style={styles.titleContainer}>
-            <Text style={[
-              typography.subtitle,
-              { color: colors.text.primary, marginBottom: 4 },
-              compromisso.concluido && { textDecorationLine: 'line-through', color: colors.text.secondary }
-            ]} numberOfLines={2}>
-              {compromisso.titulo}
-            </Text>
-            
-            <View style={styles.infoRow}>
-              <View style={styles.infoItem}>
-                <View style={styles.categoria}>
-                  <View style={[styles.categoriaIndicator, { backgroundColor: corCategoria }]} />
-                  <Text style={[typography.caption, { color: colors.text.secondary }]}>
-                    {nomeCategoria}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[typography.caption, { color: colors.text.secondary }]}>
-                {compromisso.hora}
+        {/* Corpo do card que abre a edição */}
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          activeOpacity={0.8}
+          onPress={onEdit}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.titleColumn}>
+              <Text style={[typography.cardTitle, styles.cardTitle, compromisso.concluido && styles.textConcluido]}>
+                {compromisso.titulo}
+              </Text>
+              {compromisso.materiaId ? (
+                <Text style={[typography.small, styles.materiaText]}>
+                  📚 {getMateriaNome(compromisso.materiaId)}
+                </Text>
+              ) : null}
+            </View>
+            <View style={[styles.badge, { backgroundColor: corCard + '15' }]}>
+              <Text style={[styles.badgeText, { color: corCard }]}>
+                {nomeCategoria}
               </Text>
             </View>
           </View>
 
-          {/* Botões de ação da direita */}
-          <View style={styles.actions}>
-            <TouchableOpacity 
-              onPress={(e) => { e.stopPropagation(); onEdit(); }} 
-              style={styles.actionButton}
-            >
-              <Edit3 size={18} color={colors.text.secondary} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={(e) => { e.stopPropagation(); onDelete(); }} 
-              style={styles.actionButton}
-            >
-              <Trash2 size={18} color={colors.danger} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.infoRow, { marginTop: 8 }]}>
-          <View style={styles.infoItem}>
-            <View style={styles.bellContainer}>
-              {compromisso.notificacaoConfig?.notifications?.some(n => n.enabled) ? (
-                <Bell size={14} color={colors.primary} />
-              ) : (
-                <BellOff size={14} color={colors.text.tertiary} />
-              )}
-            </View>
-            <Text style={[typography.caption, { color: compromisso.notificacaoConfig?.notifications?.some(n => n.enabled) ? colors.primary : colors.text.tertiary }]}>
-              {getMultipleNotificationText(compromisso.notificacaoConfig)}
+          {compromisso.descricao ? (
+            <Text style={[typography.body, styles.descricaoText]} numberOfLines={2}>
+              {compromisso.descricao}
             </Text>
+          ) : null}
+
+          <View style={styles.cardFooter}>
+            {/* Data */}
+            <View style={styles.infoRow}>
+              <CalendarIcon size={14} color={colors.text.secondary} />
+              <Text style={[typography.caption, styles.infoText]}>
+                {formatarData(compromisso.data)}
+              </Text>
+            </View>
+
+            {/* Hora */}
+            {compromisso.hora ? (
+              <View style={styles.infoRow}>
+                <Clock size={14} color={colors.text.secondary} />
+                <Text style={[typography.caption, styles.infoText]}>
+                  {compromisso.hora}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* 🔔 Bloco de Notificações Adicionado */}
+            <View style={styles.infoRow}>
+              {/* Ícone condicional com risco e cor terciária se inativo, ou sino azul se ativo */}
+              {hasActiveNotifications ? (
+                <Bell size={13} color={colors.primary} />
+              ) : (
+                <BellOff size={13} color={colors.text.tertiary} />
+              )}
+              {/* Texto condicional azul se ativo, ou terciário se inativo */}
+              <Text style={[typography.caption, styles.infoText, { color: hasActiveNotifications ? colors.primary : colors.text.tertiary }]}>
+                {getNotificationLabel()}
+              </Text>
+            </View>
+
+            {/* Alerta de Atrasado */}
+            {atrasado && (
+              <View style={styles.atrasadoBadge}>
+                <Text style={styles.atrasadoBadgeText}>ATRASADO</Text>
+              </View>
+            )}
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {compromisso.descricao && (
-          <Text style={[
-            typography.caption,
-            { color: colors.text.secondary, lineHeight: 18, marginTop: 8 },
-            compromisso.concluido && { textDecorationLine: 'line-through' },
-          ]}>
-            {compromisso.descricao}
-          </Text>
-        )}
-
-        {isCompromissoExpired && !compromisso.concluido && (
-          <Text style={[typography.caption, { color: colors.danger, fontWeight: '600', marginTop: 8 }]}>
-            Pendente
-          </Text>
-        )}
-      </TouchableOpacity>
+      </View>
     </BaseCard>
-  );r
+  );
 }
 
 function makeStyles(colors: typeof lightColors) {
   return StyleSheet.create({
-    header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    checkButton: { marginRight: 12, marginTop: 2 },
-    titleContainer: { flex: 1 },
-    categoria: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    categoriaIndicator: { width: 8, height: 8, borderRadius: 4 },
-    actions: { flexDirection: 'row', gap: 8 },
-    actionButton: { padding: 4 },
-    infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    infoItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-    bellContainer: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
-    badge: { position: 'absolute', top: -6, right: -6, backgroundColor: colors.danger, borderRadius: 6, minWidth: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-    badgeText: { fontSize: 8, color: '#FFF', fontWeight: 'bold' }
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+    titleColumn: { flex: 1, marginRight: 10 },
+    cardTitle: { color: colors.text.primary },
+    textConcluido: { textDecorationLine: 'line-through', opacity: 0.5, color: colors.text.secondary },
+    materiaText: { color: colors.primary, marginTop: 4, fontWeight: '500' },
+    descricaoText: { color: colors.text.secondary, fontSize: 14, marginBottom: 12, lineHeight: 18 },
+    badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    infoText: { color: colors.text.secondary },
+    atrasadoBadge: { backgroundColor: colors.danger, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+    atrasadoBadgeText: { color: '#FFF', fontSize: 9, fontWeight: '800' }
   });
 }

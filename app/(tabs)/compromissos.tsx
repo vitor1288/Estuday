@@ -7,8 +7,7 @@ import { ManageDataModal } from '@/components/ManageDataModal';
 import { CompromissoModal } from '@/components/CompromissoModal/CompromissoModal'; 
 import { filtrarEOrdenarCompromissos, OrderOption, OrderDirection } from '@/utils/filterUtils';
 import { lightColors } from '@/components/theme/colors';
-// 🟢 ADICIONADO: Importados Circle e CheckCircle para a bolinha de conclusão
-import { Settings, Calendar as CalendarIcon, Clock, Plus, Filter, Search, X, Check, ArrowDownUp, Circle, CheckCircle } from 'lucide-react-native';
+import { Settings, Calendar as CalendarIcon, Clock, Plus, Filter, Search, X, Check, ArrowDownUp, Circle, CheckCircle, Bell, BellOff } from 'lucide-react-native';
 
 type StatusTab = 'todos' | 'pendente' | 'realizar' | 'hoje' | 'concluido';
 
@@ -38,7 +37,6 @@ export default function CompromissosScreen() {
   const [modalCriarVisivel, setModalCriarVisivel] = useState(false); 
   const [modalFiltroVisivel, setModalFiltroVisivel] = useState(false);
   const [modalOrdenacaoVisivel, setModalOrdenacaoVisivel] = useState(false);
-  // 🟢 CORREÇÃO 4: Estado criado para armazenar o compromisso que vai ser editado
   const [compromissoEdicao, setCompromissoEdicao] = useState<any | null>(null);
 
   // Função utilitária para checar atrasos
@@ -227,11 +225,9 @@ export default function CompromissosScreen() {
           else if (atrasado) statusCard = 'expired';
 
           return (
-            // 🟢 CORREÇÃO 1 & 4: Definimos onPress como undefined para o card de fora não roubar o clique geral
             <BaseCard variant="compromisso" status={statusCard} sideBarColor={corCard} onPress={undefined} showShadow={true}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 
-                {/* 🟢 CORREÇÃO 1: Bolinha interativa isolada apenas para concluir o item */}
                 <TouchableOpacity 
                   onPress={() => toggleCompromisso(item.id)}
                   style={{ marginRight: 12, paddingVertical: 8, paddingHorizontal: 4 }}
@@ -273,7 +269,29 @@ export default function CompromissosScreen() {
                         <Text style={[typography.caption, styles.infoText]}>{item.hora}</Text>
                       </View>
                     ) : null}
+{(() => {
+                      const activeNotificationsCount = (item.notificacaoConfig?.notifications || []).filter((n: any) => n.enabled).length;
+                      const hasActiveNotifications = activeNotificationsCount > 0;
+                      
+                      const label = !hasActiveNotifications 
+                        ? 'Sem notificação' 
+                        : activeNotificationsCount === 1 
+                          ? `1 lembrete` 
+                          : `${activeNotificationsCount} lembretes`;
 
+                      return (
+                        <View style={[styles.infoRow, { marginLeft: 2 }]}>
+                          {hasActiveNotifications ? (
+                            <Bell size={13} color={colors.primary} />
+                          ) : (
+                            <BellOff size={13} color={colors.text.tertiary} />
+                          )}
+                          <Text style={[typography.caption, styles.infoText, { color: hasActiveNotifications ? colors.primary : colors.text.tertiary }]}>
+                            {label}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                     {atrasado && <View style={styles.atrasadoBadge}><Text style={styles.atrasadoBadgeText}>ATRASADO</Text></View>}
                   </View>
                 </TouchableOpacity>
