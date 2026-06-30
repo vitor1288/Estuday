@@ -1,4 +1,3 @@
-//aaaaa aaa aaa aaa
 ./expo-env.d.ts
 ./hooks/useFrameworkReady.ts
 ./package.json
@@ -19,7 +18,6 @@
 ./utils/alertPolyfill.ts
 ./utils/filterUtils.ts
 ./utils/dateUtils.ts
-./direcionamento_arquivos.txtio
 ./tsconfig.json
 ./app/+not-found.tsx
 ./app/(tabs)/compromissos.tsx
@@ -29,7 +27,6 @@
 ./app/(tabs)/anotacoes.tsx
 ./app/(tabs)/_layout.tsx
 ./app/_layout.tsx
-./components/DayModal/.DayModal.tsx.swp
 ./components/DayModal/DayModal.tsx
 ./components/CompromissoCard/CompromissoCard.tsx
 ./components/DatePicker/DatePicker.tsx
@@ -46,6 +43,8 @@
 ./components/NotificationSelector/NotificationSelector.tsx
 ./components/BaseCard/BaseCard.styles.ts
 ./components/BaseCard/BaseCard.tsx
+./components/CustomAlert.tsx
+./components/ReportModal.tsx
 ./components/CompromissoModal/CompromissoModal.tsx
 ./components/Calendar/CalendarDay.tsx
 ./components/Calendar/Calendar.tsx
