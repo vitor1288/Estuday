@@ -141,7 +141,7 @@ export default function CompromissosScreen() {
         <Text style={[typography.screenTitle, { color: colors.text.primary }]}>Compromissos</Text>
         <TouchableOpacity style={styles.btnGerenciar} onPress={() => setModalGerenciarVisivel(true)}>
           <Settings size={14} color={colors.primary} />
-          <Text style={styles.btnGerenciarText}>Gerenciar Matérias/Categorias</Text>
+          <Text style={styles.btnGerenciarText}>Matérias/Categorias</Text>
         </TouchableOpacity>
       </View>
 
