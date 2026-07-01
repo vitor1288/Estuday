@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, TextInput, Image, Modal, SafeAreaView as RNSafeAreaView, Platform
+  TextInput, Image, Modal, SafeAreaView as RNSafeAreaView, Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, BookOpen, Info, Trash2, ChartBar as BarChart3,
   Camera, Edit3, Check, X, Settings, ChevronRight, Sun, Moon, Smartphone,
-  FileText, Copy, Download, CheckSquare, Square, ListChecks,
+  FileText, Copy, Download, CheckSquare, Square,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,7 +17,19 @@ import * as Sharing from 'expo-sharing';
 import { useEstuday } from '@/contexts/StudayContext';
 import { useTheme, ThemePreference } from '@/contexts/ThemeContext';
 import { lightColors, darkColors } from '@/components/theme/colors';
-import { ManageDataModal } from '@/components/ManageDataModal';
+import { CustomAlert } from '@/components/CustomAlert';
+
+type AlertType = 'success' | 'error' | 'warning' | 'info' | 'confirm';
+
+interface AlertState {
+  visible: boolean;
+  title: string;
+  message: string;
+  type: AlertType;
+  confirmText: string;
+  cancelText: string;
+  onConfirm?: () => void;
+}
 
 export default function ProfileScreen() {
   const { state, dispatch, updateProfile } = useEstuday();
@@ -28,11 +40,10 @@ export default function ProfileScreen() {
   const [tempName, setTempName] = useState(state.userProfile.nome);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const [modalGerenciarVisivel, setModalGerenciarVisivel] = useState(false);
-  
+
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
-  
+
   // NOVO: Estado para controlar quais campos vão ser exportados
   const [exportConfig, setExportConfig] = useState({
     data: true,
@@ -43,80 +54,101 @@ export default function ProfileScreen() {
     descricao: true,
   });
 
+  // 🟢 NOVO: Estado do CustomAlert (substitui o Alert.alert do sistema)
+  const [alertState, setAlertState] = useState<AlertState>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+    confirmText: 'OK',
+    cancelText: 'Cancelar',
+    onConfirm: undefined,
+  });
+
+  // 🟢 NOVO: Estado do menu de escolha de foto (substitui o action sheet do Alert.alert)
+  const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: AlertType = 'info',
+    onConfirm?: () => void,
+    confirmText = 'OK',
+    cancelText = 'Cancelar'
+  ) => {
+    setAlertState({ visible: true, title, message, type, confirmText, cancelText, onConfirm });
+  };
+
+  const closeAlert = () => {
+    setAlertState(prev => ({ ...prev, visible: false }));
+  };
+
   // ─── Limpar dados ────────────────────────────────────────────────────────────
   const handleClearData = () => {
-    Alert.alert(
+    showAlert(
       'Limpar todos os dados',
       'Esta ação irá remover todos os seus compromissos, anotações e dados do perfil. Não pode ser desfeita.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Limpar', style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove([
-                '@estuday:compromissos', '@estuday:anotacoes', '@estuday:userProfile',
-              ]);
-              const defaultProfile = { nome: 'Estudante', fotoUri: undefined, isCustomized: false };
-              dispatch({ type: 'LOAD_DATA', payload: { compromissos: [], anotacoes: [], userProfile: defaultProfile } });
-              setTempName(defaultProfile.nome);
-              setIsEditingName(false);
-              Alert.alert('Sucesso', 'Todos os dados foram removidos.');
-            } catch {
-              Alert.alert('Erro', 'Erro ao limpar os dados. Tente novamente.');
-            }
-          },
-        },
-      ]
+      'confirm',
+      async () => {
+        try {
+          await AsyncStorage.multiRemove([
+            '@estuday:compromissos', '@estuday:anotacoes', '@estuday:userProfile',
+          ]);
+          const defaultProfile = { nome: 'Estudante', fotoUri: undefined, isCustomized: false };
+          dispatch({ type: 'LOAD_DATA', payload: { compromissos: [], anotacoes: [], userProfile: defaultProfile } });
+          setTempName(defaultProfile.nome);
+          setIsEditingName(false);
+          showAlert('Sucesso', 'Todos os dados foram removidos.', 'success');
+        } catch {
+          showAlert('Erro', 'Erro ao limpar os dados. Tente novamente.', 'error');
+        }
+      },
+      'Limpar',
+      'Cancelar'
     );
   };
 
   // ─── Foto ─────────────────────────────────────────────────────────────────
   const handleImagePicker = () => {
-    Alert.alert('Escolher foto', 'Selecione uma opção', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Câmera', onPress: () => openImagePicker('camera') },
-      { text: 'Galeria', onPress: () => openImagePicker('library') },
-      ...(state.userProfile.fotoUri
-        ? [{ text: 'Remover foto', style: 'destructive' as const, onPress: removeProfileImage }]
-        : []),
-    ]);
+    setPhotoMenuVisible(true);
   };
 
   const openImagePicker = async (source: 'camera' | 'library') => {
+    setPhotoMenuVisible(false);
     try {
       let result;
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Erro', 'Permissão de câmera necessária!'); return; }
+        if (status !== 'granted') { showAlert('Erro', 'Permissão de câmera necessária!', 'error'); return; }
         result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { Alert.alert('Erro', 'Permissão de galeria necessária!'); return; }
+        if (status !== 'granted') { showAlert('Erro', 'Permissão de galeria necessária!', 'error'); return; }
         result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
       }
       if (!result.canceled && result.assets[0]) {
         await updateProfile({ ...state.userProfile, fotoUri: result.assets[0].uri, isCustomized: true });
-        Alert.alert('Sucesso', 'Foto de perfil atualizada!');
+        showAlert('Sucesso', 'Foto de perfil atualizada!', 'success');
       }
     } catch {
-      Alert.alert('Erro', 'Erro ao selecionar imagem. Tente novamente.');
+      showAlert('Erro', 'Erro ao selecionar imagem. Tente novamente.', 'error');
     }
   };
 
   const removeProfileImage = async () => {
+    setPhotoMenuVisible(false);
     const isNameCustomized = state.userProfile.nome.trim() !== 'Estudante';
     await updateProfile({ ...state.userProfile, fotoUri: undefined, isCustomized: isNameCustomized });
-    Alert.alert('Sucesso', 'Foto removida!');
+    showAlert('Sucesso', 'Foto removida!', 'success');
   };
 
   // ─── Nome ─────────────────────────────────────────────────────────────────
   const handleSaveName = async () => {
-    if (!tempName.trim()) { Alert.alert('Erro', 'O nome não pode estar vazio.'); return; }
+    if (!tempName.trim()) { showAlert('Erro', 'O nome não pode estar vazio.', 'error'); return; }
     const isNameCustomized = tempName.trim() !== 'Estudante';
     await updateProfile({ ...state.userProfile, nome: tempName.trim(), isCustomized: isNameCustomized || !!state.userProfile.fotoUri });
     setIsEditingName(false);
-    Alert.alert('Sucesso', 'Nome atualizado!');
+    showAlert('Sucesso', 'Nome atualizado!', 'success');
   };
 
   const handleCancelEdit = () => { setTempName(state.userProfile.nome); setIsEditingName(false); };
@@ -161,7 +193,7 @@ export default function ProfileScreen() {
 
     let texto = '';
     widgets.forEach(c => {
-      
+
       if (exportConfig.data) {
         let dataFormatada = 'Sem data';
         if (c.data && c.data.includes('-')) {
@@ -196,7 +228,7 @@ export default function ProfileScreen() {
       if (exportConfig.descricao) {
         const descricaoOriginal = c.descricao ? c.descricao.trim() : '';
         const temDescricaoValida = descricaoOriginal && descricaoOriginal.toLowerCase() !== 'sem descrição';
-        
+
         if (temDescricaoValida) {
           texto += `Descrição: ${descricaoOriginal}\n`;
         }
@@ -210,14 +242,14 @@ export default function ProfileScreen() {
 
   const handleCopiarRelatorio = async () => {
     const texto = construirTextoRelatorio();
-    if (!texto) { Alert.alert('Aviso', 'Selecione ao menos um compromisso.'); return; }
+    if (!texto) { showAlert('Aviso', 'Selecione ao menos um compromisso.', 'warning'); return; }
     await Clipboard.setStringAsync(texto);
-    Alert.alert('Copiado! ', 'O relatório formatado foi copiado com sucesso.');
+    showAlert('Copiado!', 'O relatório formatado foi copiado com sucesso.', 'success');
   };
 
   const handleBaixarRelatorio = async () => {
     const texto = construirTextoRelatorio();
-    if (!texto) { Alert.alert('Aviso', 'Selecione ao menos um compromisso.'); return; }
+    if (!texto) { showAlert('Aviso', 'Selecione ao menos um compromisso.', 'warning'); return; }
 
     try {
       const now = new Date();
@@ -252,13 +284,13 @@ export default function ProfileScreen() {
           });
         } else {
           await Clipboard.setStringAsync(texto);
-          Alert.alert('Download indisponível', 'O relatório foi copiado para a Área de Transferência!');
+          showAlert('Download indisponível', 'O relatório foi copiado para a Área de Transferência!', 'warning');
         }
       }
     } catch (error) {
       console.log(error);
       await Clipboard.setStringAsync(texto);
-      Alert.alert('Aviso', 'Não foi possível baixar o arquivo.');
+      showAlert('Aviso', 'Não foi possível baixar o arquivo.', 'warning');
     }
   };
 
@@ -343,15 +375,6 @@ export default function ProfileScreen() {
             <ChevronRight size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
 
-          {/* 🟢 NOVO: Movido da tela de Compromissos para cá */}
-          <TouchableOpacity style={s.settingsCard} onPress={() => setModalGerenciarVisivel(true)}>
-            <View style={s.settingsRow}>
-              <ListChecks size={20} color={colors.primary} />
-              <Text style={s.settingsLabel}>Gerenciar Matérias e Categorias</Text>
-            </View>
-            <ChevronRight size={18} color={colors.text.tertiary} />
-          </TouchableOpacity>
-
           <TouchableOpacity style={s.settingsCard} onPress={handleOpenReport}>
             <View style={s.settingsRow}>
               <FileText size={20} color={colors.primary} />
@@ -376,7 +399,7 @@ export default function ProfileScreen() {
             <Info size={20} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={s.aboutCardTitle}>Versão do App</Text>
-              <Text style={s.aboutCardText}>1.0.0</Text>
+              <Text style={s.aboutCardText}>2.0.0</Text>
             </View>
           </View>
           <View style={s.aboutCard}>
@@ -384,8 +407,8 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <Text style={s.aboutCardTitle}>Sobre o Estuday</Text>
               <Text style={s.aboutCardText}>
-                O Estuday é o seu companheiro de estudos, ajudando-o a organizar compromissos,
-                fazer anotações e manter o foco nos seus objetivos académicos.
+                Criado em 2025 para escola aberta, o Estuday é um projeto independente feito por estudantes cansados de
+                 perder prazos. Recomendado para todos aqueles que compartilham do mesmo sintoma. 
               </Text>
             </View>
           </View>
@@ -534,8 +557,51 @@ export default function ProfileScreen() {
         </RNSafeAreaView>
       </Modal>
 
-      {/* 🟢 NOVO: Modal de Gerenciar Matérias e Categorias, movido da tela de Compromissos */}
-      <ManageDataModal visible={modalGerenciarVisivel} onClose={() => setModalGerenciarVisivel(false)} />
+      {/* ── MODAL: Menu de foto (substitui o Alert.alert de 4 opções) ── */}
+      <Modal visible={photoMenuVisible} transparent animationType="fade" onRequestClose={() => setPhotoMenuVisible(false)}>
+        <TouchableOpacity
+          style={s.photoMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setPhotoMenuVisible(false)}
+        >
+          <View style={[s.photoMenuContainer, { backgroundColor: colors.background.primary }]}>
+            <Text style={[s.photoMenuTitle, { color: colors.text.primary }]}>Escolher foto</Text>
+
+            <TouchableOpacity style={s.photoMenuOption} onPress={() => openImagePicker('camera')}>
+              <Camera size={20} color={colors.primary} />
+              <Text style={[s.photoMenuOptionText, { color: colors.text.primary }]}>Câmera</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.photoMenuOption} onPress={() => openImagePicker('library')}>
+              <Edit3 size={20} color={colors.primary} />
+              <Text style={[s.photoMenuOptionText, { color: colors.text.primary }]}>Galeria</Text>
+            </TouchableOpacity>
+
+            {state.userProfile.fotoUri && (
+              <TouchableOpacity style={s.photoMenuOption} onPress={removeProfileImage}>
+                <Trash2 size={20} color={colors.danger} />
+                <Text style={[s.photoMenuOptionText, { color: colors.danger }]}>Remover foto</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity style={s.photoMenuCancel} onPress={() => setPhotoMenuVisible(false)}>
+              <Text style={[s.photoMenuOptionText, { color: colors.text.secondary, fontWeight: '600' }]}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── CustomAlert (substitui o Alert.alert do sistema) ── */}
+      <CustomAlert
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+        confirmText={alertState.confirmText}
+        cancelText={alertState.cancelText}
+        onConfirm={alertState.onConfirm}
+        onClose={closeAlert}
+      />
 
     </SafeAreaView>
   );
@@ -604,5 +670,13 @@ function makeStyles(colors: typeof lightColors) {
     aboutCardText: { fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
     aboutFooter: { alignItems: 'center', paddingVertical: 20, marginBottom: 10 },
     aboutFooterText: { fontSize: 13, color: colors.text.tertiary, textAlign: 'center' },
+
+    // Estilos do menu de foto (substitui o Alert.alert de 4 opções)
+    photoMenuOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
+    photoMenuContainer: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, paddingBottom: 32, paddingHorizontal: 20 },
+    photoMenuTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center', marginBottom: 12, opacity: 0.6 },
+    photoMenuOption: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border.light },
+    photoMenuOptionText: { fontSize: 16, fontWeight: '500' },
+    photoMenuCancel: { paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   });
 }
