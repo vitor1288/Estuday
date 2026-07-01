@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   User, BookOpen, Info, Trash2, ChartBar as BarChart3,
   Camera, Edit3, Check, X, Settings, ChevronRight, Sun, Moon, Smartphone,
-  FileText, Copy, Download, CheckSquare, Square,
+  FileText, Copy, Download, CheckSquare, Square, ListChecks,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +17,7 @@ import * as Sharing from 'expo-sharing';
 import { useEstuday } from '@/contexts/StudayContext';
 import { useTheme, ThemePreference } from '@/contexts/ThemeContext';
 import { lightColors, darkColors } from '@/components/theme/colors';
+import { ManageDataModal } from '@/components/ManageDataModal';
 
 export default function ProfileScreen() {
   const { state, dispatch, updateProfile } = useEstuday();
@@ -27,6 +28,7 @@ export default function ProfileScreen() {
   const [tempName, setTempName] = useState(state.userProfile.nome);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [modalGerenciarVisivel, setModalGerenciarVisivel] = useState(false);
   
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
@@ -341,6 +343,15 @@ export default function ProfileScreen() {
             <ChevronRight size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
 
+          {/* 🟢 NOVO: Movido da tela de Compromissos para cá */}
+          <TouchableOpacity style={s.settingsCard} onPress={() => setModalGerenciarVisivel(true)}>
+            <View style={s.settingsRow}>
+              <ListChecks size={20} color={colors.primary} />
+              <Text style={s.settingsLabel}>Gerenciar Matérias e Categorias</Text>
+            </View>
+            <ChevronRight size={18} color={colors.text.tertiary} />
+          </TouchableOpacity>
+
           <TouchableOpacity style={s.settingsCard} onPress={handleOpenReport}>
             <View style={s.settingsRow}>
               <FileText size={20} color={colors.primary} />
@@ -522,6 +533,9 @@ export default function ProfileScreen() {
           </View>
         </RNSafeAreaView>
       </Modal>
+
+      {/* 🟢 NOVO: Modal de Gerenciar Matérias e Categorias, movido da tela de Compromissos */}
+      <ManageDataModal visible={modalGerenciarVisivel} onClose={() => setModalGerenciarVisivel(false)} />
 
     </SafeAreaView>
   );

@@ -59,13 +59,12 @@ export function CalendarDay({ day, dateString, isToday, compromissos, anotacoes,
   };
 
   const getClassificationAbbr = (categoria: string) => {
-    if (!categoria) return 'UNDE';
+    if (!categoria) return 'N/A';
     
     const abbr: Record<string, string> = { 
       aula: 'AULA', 
       prova: 'PROVA', 
       trabalho: 'TRAB', 
-      outro: 'OUTRO' 
     };
     
     // ✨ CORREÇÃO: Aumentado o limite para 6 letras (substring 0 a 6)
