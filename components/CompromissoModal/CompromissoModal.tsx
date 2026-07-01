@@ -31,10 +31,10 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
   const [descricao, setDescricao] = useState('');
   const [data, setData] = useState(formatDate(new Date()));
   const [hora, setHora] = useState('09:00');
-  
+
   const [categoriaId, setCategoriaId] = useState('');
   const [materiaId, setMateriaId] = useState('');
-  
+
   const [notificationConfig, setNotificationConfig] = useState<MultipleNotificationConfig>({
     notifications: [{ enabled: true, tempo: 1, unidade: 'dias' }]
   });
@@ -51,8 +51,8 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
   });
 
   const showAlert = (
-    title: string, 
-    message: string, 
+    title: string,
+    message: string,
     type: 'success' | 'error' | 'warning' | 'info' | 'confirm' = 'info',
     onConfirm?: () => void
   ) => {
@@ -93,7 +93,7 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
     if (!isTituloEditado) {
       const cat = listaCategorias.find((c: any) => c.id === categoriaId);
       const mat = listaMaterias.find((m: any) => m.id === materiaId);
-      
+
       if (cat && mat) {
         setTitulo(`${cat.nome} de ${mat.nome}`);
       } else if (cat) {
@@ -122,8 +122,8 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
       hora,
       categoriaId: categoriaId || '',
       materiaId: materiaId || '',
-      categoria: catSelecionada ? catSelecionada.nome : '', 
-      materia: matSelecionada ? matSelecionada.nome : '',     
+      categoria: catSelecionada ? catSelecionada.nome : '',
+      materia: matSelecionada ? matSelecionada.nome : '',
       notificacaoConfig: notificationConfig,
       concluido: compromisso?.concluido || false
     };
@@ -149,20 +149,21 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <X size={24} color={colors.text.primary} />
             </TouchableOpacity>
-            
+
             <View style={styles.titleWrapper}>
               <Text style={[typography.h3, { color: colors.text.primary }]} numberOfLines={1}>
                 {compromisso ? 'Editar Compromisso' : 'Novo Compromisso'}
               </Text>
             </View>
-            
+
             <TouchableOpacity onPress={handleSave} style={styles.saveButtonHeader}>
               <Text style={styles.saveButtonTextHeader}>Salvar</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* ... todo o conteúdo do ScrollView permanece igual ... */}
+
+            {/* Título */}
             <View style={styles.field}>
               <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Título</Text>
               <TextInput
@@ -189,8 +190,73 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
               />
             </View>
 
-            {/* ... resto dos campos (Categoria, Matéria, Data, Hora, Notificações, Descrição) permanecem iguais ... */}
+            {/* Categoria */}
+            <View style={styles.field}>
+              <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Categoria</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.categoriaContainer}>
+                  {listaCategorias.map((cat: any) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoriaButton,
+                        categoriaId === cat.id && { backgroundColor: cat.cor, borderColor: cat.cor }
+                      ]}
+                      onPress={() => setCategoriaId(prev => prev === cat.id ? '' : cat.id)}
+                    >
+                      <Text style={[typography.caption, { color: categoriaId === cat.id ? '#FFF' : colors.text.primary }]}>
+                        {cat.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
 
+            {/* Matéria */}
+            <View style={styles.field}>
+              <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Matéria</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.categoriaContainer}>
+                  {listaMaterias.map((mat: any) => (
+                    <TouchableOpacity
+                      key={mat.id}
+                      style={[
+                        styles.categoriaButton,
+                        materiaId === mat.id && { backgroundColor: colors.primary, borderColor: colors.primary }
+                      ]}
+                      onPress={() => setMateriaId(prev => prev === mat.id ? '' : mat.id)}
+                    >
+                      <Text style={[typography.caption, { color: materiaId === mat.id ? '#FFF' : colors.text.primary }]}>
+                        {mat.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* Data e Hora */}
+            <View style={styles.row}>
+              <View style={[styles.field, { flex: 1, marginRight: 8 }]}>
+                <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Data</Text>
+                <DatePicker value={data} onDateChange={setData} />
+              </View>
+
+              <View style={[styles.field, { flex: 1, marginLeft: 8 }]}>
+                <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Hora</Text>
+                <TouchableOpacity style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
+                  <Text style={[typography.body, { color: colors.text.primary }]}>{hora}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Notificações */}
+            <View style={styles.field}>
+              <NotificationSelector value={notificationConfig} onValueChange={setNotificationConfig} />
+            </View>
+
+            {/* Descrição */}
             <View style={[styles.field, { marginBottom: 40 }]}>
               <Text style={[typography.caption, { color: colors.text.secondary, marginBottom: 8 }]}>Descrição</Text>
               <TextInput
@@ -247,16 +313,15 @@ export function CompromissoModal({ visible, compromisso, initialDate, onClose, o
 
 function makeStyles(colors: typeof lightColors) {
   return StyleSheet.create({
-    // ... seus estilos originais (mantidos iguais)
     container: { flex: 1, backgroundColor: colors.background.secondary },
-    header: { 
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
       height: 64,
-      paddingHorizontal: 16, 
-      backgroundColor: colors.background.primary, 
-      borderBottomWidth: 1, 
+      paddingHorizontal: 16,
+      backgroundColor: colors.background.primary,
+      borderBottomWidth: 1,
       borderBottomColor: colors.border.light,
       position: 'relative'
     },
@@ -265,7 +330,7 @@ function makeStyles(colors: typeof lightColors) {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    closeButton: { 
+    closeButton: {
       position: 'absolute',
       left: 16,
       padding: 6,
