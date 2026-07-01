@@ -48,7 +48,8 @@
       }
     },
     "android": {
-      "package": "com.vitor1121.Estuday"
+      "package": "com.vitor1121.Estuday",
+      "navigationBarColor": "#0B1220"
     },
     "runtimeVersion": {
       "policy": "appVersion"

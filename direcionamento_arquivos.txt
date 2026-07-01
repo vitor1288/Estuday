@@ -1,4 +1,5 @@
 ./expo-env.d.ts
+./vercel.json
 ./hooks/useFrameworkReady.ts
 ./package.json
 ./.gitignore
