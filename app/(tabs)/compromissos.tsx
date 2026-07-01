@@ -174,7 +174,7 @@ export default function CompromissosScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
           {(['todos', 'pendente', 'realizar', 'hoje', 'concluido'] as StatusTab[]).map((tab) => {
             const isActive = statusFiltro === tab;
-            const labels: Record<StatusTab, string> = { todos: 'Todos', pendente: 'Pendente', realizar: 'A Realizar', hoje: 'Hoje', concluido: 'Concluído' };
+            const labels: Record<StatusTab, string> = { todos: 'Todos', pendente: 'Atrasados', realizar: 'A Realizar', hoje: 'Hoje', concluido: 'Concluídos' };
             return (
               <TouchableOpacity
                 key={tab}
