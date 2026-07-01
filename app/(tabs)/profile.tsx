@@ -37,7 +37,7 @@ export default function ProfileScreen() {
   const colors = activeTheme === 'dark' ? darkColors : lightColors;
 
   const [isEditingName, setIsEditingName] = useState(false);
-  const [tempName, setTempName] = useState(state.userProfile.nome);
+  const [tempName, setTempName] = useState(state.userProfile?.nome || 'Estudante');
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [themeModalVisible, setThemeModalVisible] = useState(false);
 
@@ -309,11 +309,12 @@ export default function ProfileScreen() {
     <SafeAreaView style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* ── Header ── */}
+      {/* ── Header ── */}
         <View style={s.header}>
           <View style={s.profileSection}>
             <TouchableOpacity style={s.avatarContainer} onPress={handleImagePicker}>
-              {state.userProfile.fotoUri
+              {/* Protegido com ?. para não quebrar se não houver foto */}
+              {state.userProfile?.fotoUri
                 ? <Image source={{ uri: state.userProfile.fotoUri }} style={s.avatar} />
                 : <View style={s.avatarPlaceholder}><User size={40} color={colors.primary} /></View>}
               <View style={s.cameraIcon}><Camera size={16} color="#fff" /></View>
@@ -334,7 +335,8 @@ export default function ProfileScreen() {
                 </View>
               ) : (
                 <View style={s.nameContainer}>
-                  <Text style={s.profileName}>{state.userProfile.nome}</Text>
+                  {/* Protegido com ?. e com um nome padrão ('Estudante') caso esteja vazio */}
+                  <Text style={s.profileName}>{state.userProfile?.nome || 'Estudante'}</Text>
                   <TouchableOpacity style={s.editNameButton} onPress={() => setIsEditingName(true)}>
                     <Edit3 size={16} color={colors.text.secondary} />
                   </TouchableOpacity>
