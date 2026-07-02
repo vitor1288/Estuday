@@ -106,52 +106,32 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
-  <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>
-    Compromissos do Dia
-  </Text>
-  {compromissos.length === 0 ? (
-    <View style={styles.emptyState}>
-      <Calendar size={48} color={colors.border.light} />
-      <Text style={[typography.body, { color: colors.text.tertiary, marginTop: 12, textAlign: 'center' }]}>
-        Nenhum compromisso pendente para este dia.
-      </Text>
-    </View>
-  ) : (
-    compromissos.map((compromisso: Compromisso) => (
-      // 1. Criamos a View container relativa para ancorar a lixeira absoluta
-      <View key={compromisso.id} style={{ position: 'relative', marginBottom: 8 }}>
-        
-        {/* O card renderiza normalmente cobrindo toda a largura */}
-        <CompromissoCard
-          compromisso={compromisso}
-          variant="compromisso-modal"
-          onEdit={() => {
-            setCompromissoEditando(compromisso);
-            setModalCompromissoVisible(true);
-          }}
-          onToggleComplete={() => toggleCompromisso(compromisso.id)}
-        />
-
-        {/* 2. Injetamos o botão por cima, flutuando no canto inferior direito do card */}
-        <TouchableOpacity
-          onPress={() => setCompromissoParaExcluir(compromisso)}
-          style={{ 
-            position: 'absolute', 
-            bottom: 27, // Alinha verticalmente com o rodapé do card
-            right: 17,  // Encosta no canto direito interno do card
-            padding: 14,
-            zIndex: 10  // Garante que o toque funcione por cima do card
-          }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Trash2 size={18} color={colors.danger} />
-        </TouchableOpacity>
-
-      </View>
-    ))
-  )}
-</View>
+            <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>
+              Compromissos do Dia
+            </Text>
+            {compromissos.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Calendar size={48} color={colors.border.light} />
+                <Text style={[typography.body, { color: colors.text.tertiary, marginTop: 12, textAlign: 'center' }]}>
+                  Nenhum compromisso pendente para este dia.
+                </Text>
+              </View>
+            ) : (
+              compromissos.map((compromisso: Compromisso) => (
+                <CompromissoCard
+                  key={compromisso.id}
+                  compromisso={compromisso}
+                  variant="compromisso-modal"
+                  onEdit={() => {
+                    setCompromissoEditando(compromisso);
+                    setModalCompromissoVisible(true);
+                  }}
+                  onDelete={() => { /* Implemente se necessário na view */ }}
+                  onToggleComplete={() => toggleCompromisso(compromisso.id)}
+                />
+              ))
+            )}
+          </View>
 
           <View style={styles.section}>
             <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>

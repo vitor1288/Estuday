@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { CheckCircle, Circle, Calendar as CalendarIcon, Clock, Bell, BellOff } from 'lucide-react-native';
+import { CheckCircle, Circle, Calendar as CalendarIcon, Clock, Bell, BellOff, Trash2 } from 'lucide-react-native';
 import { Compromisso, useEstuday } from '@/contexts/StudayContext';
 import { isExpired } from '@/utils/dateUtils';
 import { BaseCard } from '@/components/BaseCard/BaseCard';
@@ -19,6 +19,7 @@ interface CompromissoCardProps {
 export function CompromissoCard({ 
   compromisso, 
   onEdit, 
+  onDelete,
   onToggleComplete,
   variant = 'compromisso'
 }: CompromissoCardProps) {
@@ -158,6 +159,18 @@ export function CompromissoCard({
           </View>
         </TouchableOpacity>
 
+        {/* Lixeira: exclui o compromisso, fora da área que abre a edição (igual à tela de Compromissos) */}
+        {onDelete ? (
+          <TouchableOpacity
+            onPress={onDelete}
+            style={{ marginLeft: 8, padding: 8, alignSelf: 'flex-start' }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Trash2 size={18} color={colors.danger} />
+          </TouchableOpacity>
+        ) : null}
+
       </View>
     </BaseCard>
   );
@@ -179,4 +192,4 @@ function makeStyles(colors: typeof lightColors) {
     atrasadoBadge: { backgroundColor: colors.danger, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
     atrasadoBadgeText: { color: '#FFF', fontSize: 9, fontWeight: '800' }
   });
-}
+} 
