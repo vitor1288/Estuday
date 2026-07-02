@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'; 
-import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform } from 'react-native';
-import { X, Plus, Edit3, Trash2, Calendar, CalendarPlus } from 'lucide-react-native';
+import { Modal, View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Platform } from 'react-native'; // Removido o Alert nativo
+import { X, Plus, Edit3, Trash2, Calendar } from 'lucide-react-native';
 import { useEstuday, Compromisso, AnotacaoCalendario } from '@/contexts/StudayContext';
 import { formatDateBR } from '@/utils/dateUtils';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { CompromissoCard } from '@/components/CompromissoCard/CompromissoCard';
 import { CompromissoModal } from '@/components/CompromissoModal/CompromissoModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/components/theme/colors';
+import { CustomAlert } from '@/components/CustomAlert'; // 1. IMPORTADO O CUSTOM ALERT
 
 interface DayModalProps {
   visible: boolean;
@@ -28,7 +29,10 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
   const [modalCompromissoVisible, setModalCompromissoVisible] = useState(false);
   const [compromissoEditando, setCompromissoEditando] = useState<Compromisso | null>(null);
 
-  // Leitura segura com fallback para arrays vazios evitando crash
+  // 2. ESTADOS PARA CONTROLAR ITENS SELECIONADOS PARA EXCLUSÃO
+  const [compromissoParaExcluir, setCompromissoParaExcluir] = useState<Compromisso | null>(null);
+  const [anotacaoParaExcluir, setAnotacaoParaExcluir] = useState<AnotacaoCalendario | null>(null);
+
   const compromissos = useMemo(() => {
     if (!visible || !date) return [];
     return (getCompromissosPorData(date) || []).filter((c: any) => !c.concluido);
@@ -53,6 +57,26 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
       setTextoEditando('');
     }
   };
+
+  // 3. FUNÇÕES QUE EXECUTAM A EXCLUSÃO CONFIRMADA PONTUALMENTE
+  const handleConfirmDeleteCompromisso = () => {
+    if (compromissoParaExcluir) {
+      deleteCompromisso(compromissoParaExcluir.id);
+      setCompromissoParaExcluir(null);
+    }
+  };
+
+  const handleConfirmDeleteAnotacao = () => {
+    if (anotacaoParaExcluir) {
+      deleteAnotacao(anotacaoParaExcluir.id);
+      setAnotacaoParaExcluir(null);
+    }
+  };
+
+  // Limitador de texto para o preview da anotação dentro do alerta personalizado
+  const previewAnotacaoText = anotacaoParaExcluir?.texto 
+    ? (anotacaoParaExcluir.texto.length > 40 ? anotacaoParaExcluir.texto.substring(0, 40) + '...' : anotacaoParaExcluir.texto)
+    : '';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -82,41 +106,52 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
-            <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>
-              Compromissos do Dia
-            </Text>
-            {compromissos.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Calendar size={48} color={colors.border.light} />
-                <Text style={[typography.body, { color: colors.text.tertiary, marginTop: 12, textAlign: 'center' }]}>
-                  Nenhum compromisso pendente para este dia.
-                </Text>
-              </View>
-            ) : (
-              compromissos.map((compromisso: Compromisso) => (
-                <CompromissoCard
-                  key={compromisso.id}
-                  compromisso={compromisso}
-                  variant="compromisso-modal"
-                  onEdit={() => {
-                    setCompromissoEditando(compromisso);
-                    setModalCompromissoVisible(true);
-                  }}
-                  onDelete={() => {
-                    Alert.alert(
-                      'Excluir Compromisso',
-                      `Tem certeza que deseja excluir "${compromisso.titulo}"? Essa ação não pode ser desfeita.`,
-                      [
-                        { text: 'Cancelar', style: 'cancel' },
-                        { text: 'Excluir', style: 'destructive', onPress: () => deleteCompromisso(compromisso.id) }
-                      ]
-                    );
-                  }}
-                  onToggleComplete={() => toggleCompromisso(compromisso.id)}
-                />
-              ))
-            )}
-          </View>
+  <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>
+    Compromissos do Dia
+  </Text>
+  {compromissos.length === 0 ? (
+    <View style={styles.emptyState}>
+      <Calendar size={48} color={colors.border.light} />
+      <Text style={[typography.body, { color: colors.text.tertiary, marginTop: 12, textAlign: 'center' }]}>
+        Nenhum compromisso pendente para este dia.
+      </Text>
+    </View>
+  ) : (
+    compromissos.map((compromisso: Compromisso) => (
+      // 1. Criamos a View container relativa para ancorar a lixeira absoluta
+      <View key={compromisso.id} style={{ position: 'relative', marginBottom: 8 }}>
+        
+        {/* O card renderiza normalmente cobrindo toda a largura */}
+        <CompromissoCard
+          compromisso={compromisso}
+          variant="compromisso-modal"
+          onEdit={() => {
+            setCompromissoEditando(compromisso);
+            setModalCompromissoVisible(true);
+          }}
+          onToggleComplete={() => toggleCompromisso(compromisso.id)}
+        />
+
+        {/* 2. Injetamos o botão por cima, flutuando no canto inferior direito do card */}
+        <TouchableOpacity
+          onPress={() => setCompromissoParaExcluir(compromisso)}
+          style={{ 
+            position: 'absolute', 
+            bottom: 27, // Alinha verticalmente com o rodapé do card
+            right: 17,  // Encosta no canto direito interno do card
+            padding: 14,
+            zIndex: 10  // Garante que o toque funcione por cima do card
+          }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Trash2 size={18} color={colors.danger} />
+        </TouchableOpacity>
+
+      </View>
+    ))
+  )}
+</View>
 
           <View style={styles.section}>
             <Text style={[typography.subtitle, { color: colors.text.primary, marginBottom: 16 }]}>
@@ -131,7 +166,6 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                 placeholder="Adicionar nova anotação..."
                 placeholderTextColor={colors.text.tertiary}
                 multiline
-                // ⌨️ Captura o Enter na criação de anotação (Web)
                 onKeyPress={(e: any) => {
                   if (Platform.OS === 'web') {
                     if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -160,7 +194,6 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                       onChangeText={setTextoEditando}
                       multiline
                       autoFocus
-                      // ⌨️ Captura o Enter na edição de anotação (Web)
                       onKeyPress={(e: any) => {
                         if (Platform.OS === 'web') {
                           if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -196,10 +229,8 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                       </TouchableOpacity>
                       <TouchableOpacity 
                         onPress={() => {
-                          Alert.alert('Excluir Anotação', 'Tem certeza que deseja excluir esta anotação?', [
-                            { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Excluir', style: 'destructive', onPress: () => deleteAnotacao(anotacao.id) }
-                          ]);
+                          // MUDADO: Apenas joga o objeto no estado para abrir o alerta personalizado
+                          setAnotacaoParaExcluir(anotacao);
                         }}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
@@ -226,6 +257,30 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
           setModalCompromissoVisible(false);
           setCompromissoEditando(null);
         }}
+      />
+
+      {/* 4. 🟢 NOVO: Confirmação Customizada para Excluir um Compromisso */}
+      <CustomAlert
+        visible={!!compromissoParaExcluir}
+        title="Excluir Compromisso"
+        message={`Tem certeza que deseja excluir "${compromissoParaExcluir?.titulo ?? ''}"? Essa ação não pode ser desfeita.`}
+        type="confirm"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmDeleteCompromisso}
+        onClose={() => setCompromissoParaExcluir(null)}
+      />
+
+      {/* 5. 🟢 NOVO: Confirmação Customizada para Excluir uma Anotação */}
+      <CustomAlert
+        visible={!!anotacaoParaExcluir}
+        title="Excluir Anotação"
+        message={`Tem certeza que deseja excluir "${previewAnotacaoText}"? Essa ação não pode ser desfeita.`}
+        type="confirm"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmDeleteAnotacao}
+        onClose={() => setAnotacaoParaExcluir(null)}
       />
     </Modal>
   );

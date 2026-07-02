@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Modal, Platform } from 'react-native'; // Removido o Alert nativo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FileText } from 'lucide-react-native';
 import { useEstuday, AnotacaoCalendario } from '@/contexts/StudayContext';
@@ -7,6 +7,7 @@ import { AnotacaoCard } from '@/components/AnotacaoCard/AnotacaoCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { lightColors } from '@/components/theme/colors';
 import { BaseButton } from '@/components/BaseButton/BaseButton';
+import { CustomAlert } from '@/components/CustomAlert'; // 1. IMPORTADO O CUSTOM ALERT
 
 export default function AnotacoesScreen() {
   const { state, deleteAnotacao, updateAnotacao } = useEstuday();
@@ -16,6 +17,9 @@ export default function AnotacoesScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAnotacao, setEditingAnotacao] = useState<AnotacaoCalendario | null>(null);
   const [editText, setEditText] = useState('');
+
+  // 2. ESTADO PARA CONTROLAR A ANOTAÇÃO SELECIONADA PARA EXCLUSÃO
+  const [anotacaoParaExcluir, setAnotacaoParaExcluir] = useState<AnotacaoCalendario | null>(null);
 
   const sortedAnotacoes = useMemo(() =>
     [...state.anotacoes].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
@@ -28,9 +32,8 @@ export default function AnotacoesScreen() {
     setEditModalVisible(true);
   };
 
-   const handleSaveEdit = async () => {
+  const handleSaveEdit = async () => {
     if (editingAnotacao && editText.trim()) {
-      // CORREÇÃO: Passando id e texto separadamente, conforme esperado pelo StudayContext
       await updateAnotacao(editingAnotacao.id, editText.trim());
       setEditModalVisible(false);
       setEditingAnotacao(null);
@@ -44,18 +47,28 @@ export default function AnotacoesScreen() {
     setEditText('');
   };
 
+  // 3. APENAS ABRE O MODAL SALVANDO A ANOTAÇÃO NO ESTADO
   const handleDeleteAnotacao = (anotacao: AnotacaoCalendario) => {
-    const previewText = anotacao.texto.length > 50 ? anotacao.texto.substring(0, 50) + '...' : anotacao.texto;
-    Alert.alert('Confirmar exclusão', `Tem certeza que deseja excluir esta anotação?\n\n"${previewText}"`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => deleteAnotacao(anotacao.id) },
-    ]);
+    setAnotacaoParaExcluir(anotacao);
+  };
+
+  // 4. FUNÇÃO QUE VALIDA E EXECUTA A EXCLUSÃO DE FATO
+  const handleConfirmDelete = () => {
+    if (anotacaoParaExcluir) {
+      deleteAnotacao(anotacaoParaExcluir.id);
+      setAnotacaoParaExcluir(null);
+    }
   };
 
   const formatDateExtended = (dateString: string) =>
     new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', {
       weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
     });
+
+  // Limitador de texto para o preview dentro do alerta
+  const previewText = anotacaoParaExcluir?.texto 
+    ? (anotacaoParaExcluir.texto.length > 40 ? anotacaoParaExcluir.texto.substring(0, 40) + '...' : anotacaoParaExcluir.texto)
+    : '';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -132,7 +145,6 @@ export default function AnotacoesScreen() {
               multiline
               textAlignVertical="top"
               autoFocus
-              // ⌨️ Atalho Inteligente para Web
               onKeyPress={(e: any) => {
                 if (Platform.OS === 'web') {
                   if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
@@ -145,6 +157,18 @@ export default function AnotacoesScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* 5. 🟢 NOVO: Confirmação antes de excluir uma anotação */}
+      <CustomAlert
+        visible={!!anotacaoParaExcluir}
+        title="Excluir Anotação"
+        message={`Tem certeza que deseja excluir "${previewText}"? Essa ação não pode ser desfeita.`}
+        type="confirm"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmDelete}
+        onClose={() => setAnotacaoParaExcluir(null)}
+      />
     </SafeAreaView>
   );
 }
