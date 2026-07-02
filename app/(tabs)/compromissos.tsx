@@ -5,9 +5,10 @@ import { useStuday } from '@/contexts/StudayContext';
 import { BaseCard } from '@/components/BaseCard/BaseCard';
 import { ManageDataModal } from '@/components/ManageDataModal';
 import { CompromissoModal } from '@/components/CompromissoModal/CompromissoModal'; 
+import { CustomAlert } from '@/components/CustomAlert';
 import { filtrarEOrdenarCompromissos, OrderOption, OrderDirection } from '@/utils/filterUtils';
 import { lightColors } from '@/components/theme/colors';
-import { Settings, Calendar as CalendarIcon, Clock, Plus, Filter, Search, X, Check, ArrowDownUp, Circle, CheckCircle, Bell, BellOff } from 'lucide-react-native';
+import { Settings, Calendar as CalendarIcon, Clock, Plus, Filter, Search, X, Check, ArrowDownUp, Circle, CheckCircle, Bell, BellOff, Trash2 } from 'lucide-react-native';
 
 type StatusTab = 'todos' | 'pendente' | 'realizar' | 'hoje' | 'concluido';
 
@@ -19,7 +20,8 @@ export default function CompromissosScreen() {
     compromissos = [], 
     materias = [], 
     categorias = [],
-    toggleCompromisso 
+    toggleCompromisso,
+    deleteCompromisso
   } = useStuday();
 
   // Estados dos Filtros Ativos
@@ -38,6 +40,16 @@ export default function CompromissosScreen() {
   const [modalFiltroVisivel, setModalFiltroVisivel] = useState(false);
   const [modalOrdenacaoVisivel, setModalOrdenacaoVisivel] = useState(false);
   const [compromissoEdicao, setCompromissoEdicao] = useState<any | null>(null);
+
+  // 🟢 NOVO: Controla a confirmação de exclusão de um compromisso
+  const [compromissoParaExcluir, setCompromissoParaExcluir] = useState<any | null>(null);
+
+  const confirmarExclusao = () => {
+    if (compromissoParaExcluir) {
+      deleteCompromisso(compromissoParaExcluir.id);
+      setCompromissoParaExcluir(null);
+    }
+  };
 
   // Função utilitária para checar atrasos
   const verificarAtrasado = (item: any) => {
@@ -296,6 +308,16 @@ export default function CompromissosScreen() {
                   </View>
                 </TouchableOpacity>
 
+                {/* 🟢 NOVO: Botão de excluir, fora da área que abre a edição */}
+                <TouchableOpacity
+                  onPress={() => setCompromissoParaExcluir(item)}
+                  style={{ marginLeft: 8, padding: 8, alignSelf: 'flex-start' }}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Trash2 size={18} color={colors.danger} />
+                </TouchableOpacity>
+
               </View>
             </BaseCard>
           );
@@ -413,6 +435,18 @@ export default function CompromissosScreen() {
           setModalCriarVisivel(false);
           setCompromissoEdicao(null);
         }} 
+      />
+
+      {/* 🟢 NOVO: Confirmação antes de excluir um compromisso */}
+      <CustomAlert
+        visible={!!compromissoParaExcluir}
+        title="Excluir Compromisso"
+        message={`Tem certeza que deseja excluir "${compromissoParaExcluir?.titulo ?? ''}"? Essa ação não pode ser desfeita.`}
+        type="confirm"
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={confirmarExclusao}
+        onClose={() => setCompromissoParaExcluir(null)}
       />
     </View>
   );
