@@ -118,17 +118,36 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
               </View>
             ) : (
               compromissos.map((compromisso: Compromisso) => (
-                <CompromissoCard
-                  key={compromisso.id}
-                  compromisso={compromisso}
-                  variant="compromisso-modal"
-                  onEdit={() => {
-                    setCompromissoEditando(compromisso);
-                    setModalCompromissoVisible(true);
-                  }}
-                  onDelete={() => { /* Implemente se necessário na view */ }}
-                  onToggleComplete={() => toggleCompromisso(compromisso.id)}
-                />
+                // 1. View com posição relativa para ancorar o botão absoluto por cima do card
+                <View key={compromisso.id} style={{ position: 'relative', marginBottom: 8 }}>
+                  
+                  <CompromissoCard
+                    compromisso={compromisso}
+                    variant="compromisso-modal"
+                    onEdit={() => {
+                      setCompromissoEditando(compromisso);
+                      setModalCompromissoVisible(true);
+                    }}
+                    onToggleComplete={() => toggleCompromisso(compromisso.id)}
+                  />
+
+                  {/* 2. Botão da lixeira posicionado cirurgicamente sobre a parte interna inferior direita do card */}
+                  <TouchableOpacity
+                    onPress={() => setCompromissoParaExcluir(compromisso)}
+                    style={{ 
+                      position: 'absolute', 
+                      bottom: 32, // Ajustado para coincidir com a linha do rodapé do card
+                      right: 32,  // Recuo padrão da margem interna
+                      padding: 4,
+                      zIndex: 10  // Garante que o clique registre na lixeira e não abra o modal de edição
+                    }}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Trash2 size={18} color={colors.danger} />
+                  </TouchableOpacity>
+
+                </View>
               ))
             )}
           </View>

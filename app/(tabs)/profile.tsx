@@ -410,7 +410,7 @@ export default function ProfileScreen() {
               <Text style={s.aboutCardTitle}>Sobre o Estuday</Text>
               <Text style={s.aboutCardText}>
                 Criado em 2025 para escola aberta, o Estuday é um projeto independente feito por estudantes cansados de
-                 perder prazos. Recomendado para todos aqueles que compartilham d. 
+                 perder prazos. Recomendado para todos aqueles que compartilham do mesmo desafio. 
               </Text>
             </View>
           </View>
