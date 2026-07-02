@@ -17,7 +17,7 @@ interface DayModalProps {
 
 export function DayModal({ visible, date, onClose }: DayModalProps) {
   const router = useRouter();
-  const { state, getAnotacoesPorData, getCompromissosPorData, addAnotacao, updateAnotacao, deleteAnotacao, toggleCompromisso } = useEstuday();
+  const { state, getAnotacoesPorData, getCompromissosPorData, addAnotacao, updateAnotacao, deleteAnotacao, toggleCompromisso, deleteCompromisso } = useEstuday();
   const { colors, typography } = useTheme();
   const styles = makeStyles(colors);
 
@@ -102,7 +102,16 @@ export function DayModal({ visible, date, onClose }: DayModalProps) {
                     setCompromissoEditando(compromisso);
                     setModalCompromissoVisible(true);
                   }}
-                  onDelete={() => { /* Implemente se necessário na view */ }}
+                  onDelete={() => {
+                    Alert.alert(
+                      'Excluir Compromisso',
+                      `Tem certeza que deseja excluir "${compromisso.titulo}"? Essa ação não pode ser desfeita.`,
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Excluir', style: 'destructive', onPress: () => deleteCompromisso(compromisso.id) }
+                      ]
+                    );
+                  }}
                   onToggleComplete={() => toggleCompromisso(compromisso.id)}
                 />
               ))
