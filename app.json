@@ -36,6 +36,12 @@
           "color": "#3B82F6",
           "sounds": []
         }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "backgroundColor": "#0B1220"
+        }
       ]
     ],
     "experiments": {
@@ -48,8 +54,7 @@
       }
     },
     "android": {
-      "package": "com.vitor1121.Estuday",
-      "navigationBarColor": "#0B1220"
+      "package": "com.vitor1121.Estuday"
     },
     "runtimeVersion": {
       "policy": "appVersion"
